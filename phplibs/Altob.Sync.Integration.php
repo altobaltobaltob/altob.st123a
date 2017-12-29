@@ -54,6 +54,8 @@ class AltobSyncAgent
 	// 傳送進場記錄
 	public function sync_st_in($parms)
 	{
+		return 'pause';
+		
 		$error_parms_msg = $this->check_init_parms();
 		if(!empty($error_parms_msg)) { return $error_parms_msg; }
 
@@ -88,6 +90,8 @@ class AltobSyncAgent
 	// 傳送離場記錄
 	public function sync_st_out($parms)
 	{
+		return 'pause';
+		
 		$error_parms_msg = $this->check_init_parms();
 		if(!empty($error_parms_msg)) { return $error_parms_msg; }
 
@@ -130,6 +134,8 @@ class AltobSyncAgent
 	// 傳送付費更新記錄
 	public function sync_st_pay($lpr, $pay_time, $pay_type=0, $out_before_time='', $finished=false)
 	{
+		return 'pause';
+		
 		$error_parms_msg = $this->check_init_parms();
 		if(!empty($error_parms_msg)) { return $error_parms_msg; }
 
@@ -165,6 +171,8 @@ class AltobSyncAgent
 	// 傳送進出更新記錄
 	public function sync_st_io_meta($meta)
 	{
+		return 'pause';
+		
 		$error_parms_msg = $this->check_init_parms();
 		if(!empty($error_parms_msg)) { return $error_parms_msg; }
 		
