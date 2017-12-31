@@ -193,7 +193,8 @@ class Carpark extends CC_Controller
 			}
 			
 			// 執行
-			$this->app_model('cars')->lprio($parms);
+			$return_msg = $this->app_model('cars')->lprio($parms);
+			trigger_error(__FUNCTION__ . "|{$parms['lpr']}|return_msg|" . $return_msg);
 			echo 'ok';
 			exit;
 		}
