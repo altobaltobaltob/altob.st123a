@@ -192,6 +192,8 @@ class Carpark extends CC_Controller
 				exit;
 			}
 			
+			// 初始 mqtt
+			$this->init_mqtt();
 			$return_msg = $this->app_model('cars')->opendoor_lprio($parms);
 			trigger_error(__FUNCTION__ . "|test|{$parms['lpr']}|return_msg|" . $return_msg);
 			
