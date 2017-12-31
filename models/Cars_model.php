@@ -500,8 +500,8 @@ class Cars_model extends CI_Model
 
                         case strtotime($rows_cario['out_before_time']) >= time():
 
-                        	if ($rows_cario['payed'])
-                            {
+                        	//if ($rows_cario['payed'])
+                            //{
 								// CO.B.1 臨停車已付款
 								if($opendoor)
 								{
@@ -542,7 +542,8 @@ class Cars_model extends CI_Model
 								}
 								
 								return true;
-                            }
+                            /*
+							}
 							else
                             {
 								// CO.B.2 臨停車未付款
@@ -585,6 +586,7 @@ class Cars_model extends CI_Model
 								
 								return true;
                             }
+							*/
                             break;
 
                         default:
