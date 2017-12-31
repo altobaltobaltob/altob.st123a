@@ -39,7 +39,7 @@ class Cars_model extends CI_Model
 		
 		// 更新入場記錄
 		$data = array('obj_id' => $parms['lpr']);
-		$this->db->update('cario', $data, array('station_no' => $parms['sno'], 'cario_no' => $parms['cno'], 'obj_id' => $parms['old_lpr'], 'err' => 0, 'finished' => 0));
+		$this->db->update('cario', $data, array('cario_no' => $parms['cno'], 'obj_id' => $parms['old_lpr'], 'err' => 0, 'finished' => 0));
 		if ($this->db->affected_rows() <= 0)
 		{
 			trigger_error(__FUNCTION__ . '|fail|' . $this->db->last_query());
