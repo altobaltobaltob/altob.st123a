@@ -1647,4 +1647,71 @@ class Cars_model extends CI_Model
 		}
 	}
 	
+	
+	
+	
+	
+	// $this->cars2parktron($parms['lpr'], $rows_cario['in_time'], $rows_cario['pay_time'], $parms['ivsno']);
+	// 傳送臨停資訊給博辰
+    function cars2parktron($lpr, $in_time, $balance_time, $ivsno)
+    {
+		//return true; // 2016/08/12 暫時先關上
+
+		$lanes = array
+		(
+			1 => array ('ip' => '192.168.10.80'),		// 四期出口
+		);
+
+    	$param = array
+			(
+    		'PlateNo' => $lpr,                    // 車牌號碼
+    		'EntryDateTime' => $in_time,          // 進場時間，格式為 “yyyy-MM-dd HH:mm:ss”，預設值 “2000-01-01 00:00:00”
+    		'PrePaymentTime' => empty($balance_time) ? '2000-01-01 00:00:00' : $balance_time, // 最後繳費時間，格式為 “yyyy-MM-dd HH:mm:ss”，進場後還沒有任何繳費紀錄時填 “2000-01-01 00:00:00”
+    		'AreaID' => '1'                       // 區域ID，同一停車場但收費費率不同時使用，例如:汽車->1，機車->2，此為例子，汽機車區域費率請依照現場狀況
+    		);
+
+
+		trigger_error('cars2parktron param:'.print_r($param, true). ", device ip: {$lanes[$ivsno]['ip']}");
+
+		try{
+			$ch = curl_init();
+			curl_setopt($ch, CURLOPT_URL, "http://{$lanes[$ivsno]['ip']}:8080/datatrans/Service1.asmx/CarPaying");
+			//curl_setopt($ch, CURLOPT_URL, 'http://www.parktron.com:8800/WebService/Service1.asmx/CarPaying'); // parktron webservice
+			//curl_setopt($ch, CURLOPT_URL, 'http://192.168.0.80/Service1.asmx/CarPaying'); // parktron webservice
+			curl_setopt($ch, CURLOPT_HEADER, FALSE);
+			curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
+			curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, FALSE);
+			curl_setopt($ch, CURLOPT_POST, TRUE);
+			curl_setopt($ch, CURLOPT_CONNECTTIMEOUT ,5);
+			curl_setopt($ch, CURLOPT_TIMEOUT, 5); //timeout in seconds
+			curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($param));
+			$rs = curl_exec($ch);
+			curl_close($ch);
+			
+		}catch (Exception $e){
+			trigger_error('exception msg:'.$e->getMessage());
+		}
+
+		  /* Error code是由字串型態回傳，可用”:”拆出錯誤碼和訊息，可用”;”拆出多個錯誤
+			錯誤碼如下
+			-10000:POS路徑尚未設定                   -> 請通知我方工程師設定路徑
+			-9999:車牌號碼錯誤                       -> 請查看貴公司自行送過來資料
+			-9998:入場時間格式錯誤                   -> 請查看貴公司自行送過來資料
+			-9997:前次繳費時間格式錯誤                -> 請查看貴公司自行送過來資料
+			-9996:區域資料錯誤                       -> 請查看貴公司自行送過來資料
+			-9995:資料寫入失敗，請通知客服人員處理     -> 常發生時請通知我方工程師更換儲存周邊
+			0:成功
+			多個錯誤碼的狀況如下
+			-10000:POS路徑尚未設定;-9999:車牌號碼錯誤
+		  */
+		if (strpos($rs, '0:成功') !== false) {
+			// do nothing
+		trigger_error('cars2parktron success rs: ' . print_r($rs, true));
+
+		} else {
+			// TODO: 錯誤處理流程
+			trigger_error('cars2parktron error rs: ' . print_r($rs, true));
+		}
+	}
+	
 }
