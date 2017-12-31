@@ -1021,7 +1021,7 @@ class Carpark extends CC_Controller
 	
 	
 	// 博辰測試用
-	// http://localhost/carpark.html/test_8068_002/APK7310
+	// http://localhost/carpark.html/test_8068_002/APK7310/0.199
 	public function test_8068_002()
 	{
 		$lpr_in = $this->uri->segment(3);
@@ -1034,7 +1034,7 @@ class Carpark extends CC_Controller
 		
 		$error_str = '';
 		$service_port = 8068;
-		$address = empty($this->uri->segment(4)) ? "192.168.10.201" : "192.168.10." . $this->uri->segment(4);
+		$address = empty($this->uri->segment(4)) ? "192.168.10.201" : "192.168." . $this->uri->segment(4);
 
 		/* Create a TCP/IP socket. */
 		$socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);

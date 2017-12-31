@@ -49,12 +49,13 @@ define('EXPORT_BASE', '/home/data/export/');			// 檔案匯出根路徑
 define('SOS_BASE',	FILE_BASE. 'sos/');					// 警急求救路徑
 define('SOS_MSG',	SOS_BASE. 'sos.txt');				// 警急求救檔案路徑
    
-define('STATION_NAME', '未設定');						// 本場站名稱
-define('STATION_NO', 54321);							// 本場站編號
+define('STATION_NAME', '未設定（預設：中榮）');			// 本場站名稱
+define('STATION_NO', 40701);							// 本場站編號
 define('STATION_IP', $_SERVER['SERVER_NAME']);			// 本場站IP
 define('STATION_URL', 'http://'.STATION_IP.'/');		// 本場站URL
 
 define('STATION_LOCAL_IP', '192.168.10.201');			// 內網IP
+define('STATION_LOCAL_PORT', '80');						// 服務PORT
 
 define('PHPLIBS_BASE', '/home/bigbang/libs/phplibs/');	// phplibs 根路徑
 define('ALTOB_SYNC_FILE', PHPLIBS_BASE.'Altob.Sync.Integration.php');			// ALTOB (同步)

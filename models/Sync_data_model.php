@@ -822,7 +822,7 @@ class Sync_data_model extends CI_Model
 		$station_ip_str	= $station_setting_result['station_ip'];	// 場站目前對外IP
 		
 		if(empty($port_info))
-			$station_port_str = '80';
+			$station_port_str = STATION_LOCAL_PORT;
 		else
 			$station_port_str = substr($port_info, 1);				// 場站目前對外PORT
 		
@@ -926,7 +926,16 @@ class Sync_data_model extends CI_Model
 				$station_setting['station_ip'] = STATION_IP;
 				return $station_setting;
 				*/
-				return false;
+				//return false;
+				
+				// 離線直接拿預設場站
+				$station_setting = array();
+				$station_setting['station_no'] = STATION_NO;
+				$station_setting['station_no_list'] = STATION_NO;
+				$station_setting['station_name'] = STATION_NAME;
+				$station_setting['station_ip'] = STATION_LOCAL_IP;
+				$station_setting['station_port'] = STATION_LOCAL_PORT;
+				return $station_setting;
 			}
 		}
 		
