@@ -192,6 +192,9 @@ class Carpark extends CC_Controller
 				exit;
 			}
 			
+			$return_msg = $this->app_model('cars')->get_opendoor($parms);
+			trigger_error(__FUNCTION__ . "|test|{$parms['lpr']}|return_msg|" . $return_msg);
+			
 			// 執行
 			$return_msg = $this->app_model('cars')->lprio($parms);
 			trigger_error(__FUNCTION__ . "|{$parms['lpr']}|return_msg|" . $return_msg);
