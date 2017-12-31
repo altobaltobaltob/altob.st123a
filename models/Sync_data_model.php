@@ -413,6 +413,8 @@ class Sync_data_model extends CI_Model
 		// 查現況
 		$parms['station_no_arr'] = $info_arr['station_no_arr'];
 		
+		trigger_error(SYNC_DATA_LOG_TITLE . '..'. __FUNCTION__ . '..parms..' . print_r($parms, true));
+		
 		try{
 			$ch = curl_init();
 			curl_setopt($ch, CURLOPT_URL, SYNC_API_URL . 'member_query_all_in_one');
@@ -931,7 +933,8 @@ class Sync_data_model extends CI_Model
 				// 離線直接拿預設場站
 				$station_setting = array();
 				$station_setting['station_no'] = STATION_NO;
-				$station_setting['station_no_list'] = STATION_NO;
+				//$station_setting['station_no_list'] = STATION_NO;
+				$station_setting['station_no_list'] = STATION_NO . SYNC_DELIMITER_ST_NO . '40702';
 				$station_setting['station_name'] = STATION_NAME;
 				$station_setting['station_ip'] = STATION_LOCAL_IP;
 				$station_setting['station_port'] = STATION_LOCAL_PORT;
