@@ -1095,7 +1095,7 @@ class Carpark extends CC_Controller
 	{
 		$in_time = date('Y-m-d H:i:s', strtotime(" - 30 minutes"));
 		$balance_time = date('Y-m-d H:i:s');
-		$this->cars2parktron('TEST1234', $in_time, $balance_time, 6);
+		$this->cars2parktron('TEST1234', $in_time, $balance_time, 5);
 		echo 'ok';
 	}
 	
