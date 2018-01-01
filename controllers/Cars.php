@@ -234,7 +234,7 @@ http://192.168.10.201/cars.html/ipcam/sno/12119/ivsno/0/io/O/type/C/lpr/4750YC/c
 		$parms['ck'] = $this->uri->segment(5);  
 	
 		// 初始 mqtt
-		$this->init_mqtt();
+		$this->init_mqtt(true);
 		
 		// 執行	
 		$result = $this->app_model()->do_temp_opendoor($parms);
@@ -250,7 +250,7 @@ http://192.168.10.201/cars.html/ipcam/sno/12119/ivsno/0/io/O/type/C/lpr/4750YC/c
 		$parms['ck'] = $this->uri->segment(5);  
 		
 		// 初始 mqtt
-		$this->init_mqtt();
+		$this->init_mqtt(true);
 		
 		// 執行	
 		$result = $this->app_model()->do_member_opendoor($parms);
