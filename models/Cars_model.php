@@ -500,93 +500,48 @@ class Cars_model extends CI_Model
 
                         case strtotime($rows_cario['out_before_time']) >= time():
 
-                        	//if ($rows_cario['payed'])
-                            //{
-								// CO.B.1 臨停車已付款
-								if($opendoor)
-								{
-									// [msg] 6: 臨停車已付款
-									$msg_id = 6;
+							// CO.B.1 臨停車可離場
+							
+                        	// [msg] 6: 臨停車已付款
+							// [msg] 8: 臨停車未付款 (可離場)
+							$msg_id = !empty($rows_cario['payed']) ? 6 : 8;							
 								
-									// 臨停開門
-									$this->temp_opendoors($parms);
+							if($opendoor)
+							{
+								// 臨停開門
+								$this->temp_opendoors($parms);
 									
-									// 字幕
-									$this->mq_send(MQ_TOPIC_ALTOB, MQ_ALTOB_MSG.",{$msg_id},{$parms['ivsno']},{$parms['lpr']}".MQ_ALTOB_MSG_END_TAG);
+								// 字幕
+								$this->mq_send(MQ_TOPIC_ALTOB, MQ_ALTOB_MSG.",{$msg_id},{$parms['ivsno']},{$parms['lpr']}".MQ_ALTOB_MSG_END_TAG);
 									
-									// 產生回傳
-									return $this->gen_return_msg($msg_id, true);
-								}
-								else
-								{
-									$data = array
-									(
-										'in_out' => $parms['io'],
-										'finished' => 1,
-										'out_time' => $this->now_str,
-										'out_lane' => $parms['ivsno'],
-										'minutes' => $co_time_minutes,
-										'out_pic_name' => $parms['pic_name']
-									);
-									$this->db->update('cario', $data, array('cario_no' => $rows_cario['cario_no']));
-									trigger_error('臨停車已付款:' . print_r($rows, true));
-									
-									// 傳送離場記錄
-									$sync_agent = new AltobSyncAgent();
-									$sync_agent->init($parms['sno'], $this->now_str);
-									$sync_agent->cario_no = $rows_cario['cario_no'];		// 進出編號
-									$sync_agent->in_time = $rows_cario['in_time'];			// 入場時間
-									$sync_agent->finished = 1;								// 已離場
-									$sync_result = $sync_agent->sync_st_out($parms);
-									trigger_error( "..sync_st_out.." .  $sync_result);
-								}
-								
-								return true;
-                            /*
+								// 產生回傳
+								return $this->gen_return_msg($msg_id, true);
 							}
 							else
-                            {
-								// CO.B.2 臨停車未付款
-								if($opendoor)
-								{
-									// [msg] 8: 臨停車未付款
-									$msg_id = 8;
+							{
+								$data = array
+								(
+									'in_out' => $parms['io'],
+									'finished' => 1,
+									'out_time' => $this->now_str,
+									'out_lane' => $parms['ivsno'],
+									'minutes' => $co_time_minutes,
+									'out_pic_name' => $parms['pic_name']
+								);
+								$this->db->update('cario', $data, array('cario_no' => $rows_cario['cario_no']));
+								trigger_error('臨停車已付款:' . print_r($rows, true));
+									
+								// 傳送離場記錄
+								$sync_agent = new AltobSyncAgent();
+								$sync_agent->init($parms['sno'], $this->now_str);
+								$sync_agent->cario_no = $rows_cario['cario_no'];		// 進出編號
+								$sync_agent->in_time = $rows_cario['in_time'];			// 入場時間
+								$sync_agent->finished = 1;								// 已離場
+								$sync_result = $sync_agent->sync_st_out($parms);
+								trigger_error( "..sync_st_out.." .  $sync_result);
+							}
 								
-									// 字幕
-									$this->mq_send(MQ_TOPIC_ALTOB, MQ_ALTOB_MSG.",{$msg_id},{$parms['ivsno']},{$parms['lpr']}".MQ_ALTOB_MSG_END_TAG);
-									
-									// 產生回傳
-									return $this->gen_return_msg($msg_id);
-								}
-								else
-								{
-									// TODO: 歐pa卡離場記錄和臨停未付款一樣, 待更正
-									$data = array
-									(
-										'out_time' => $this->now_str,
-										'out_lane' => $parms['ivsno'],
-										'minutes' => $co_time_minutes,
-										'out_pic_name' => $parms['pic_name']
-									);
-									$this->db->update('cario', $data, array('cario_no' => $rows_cario['cario_no']));	// 記錄出場
-									trigger_error('臨停未付款:' . print_r($rows, true));
-									
-									// 傳送離場記錄
-									$sync_agent = new AltobSyncAgent();
-									$sync_agent->init($parms['sno'], $this->now_str);
-									$sync_agent->cario_no = $rows_cario['cario_no'];		// 進出編號
-									$sync_agent->in_time = $rows_cario['in_time'];			// 入場時間
-									$sync_result = $sync_agent->sync_st_out($parms);
-									trigger_error( "..sync_st_out.." .  $sync_result);
-									
-									// [mitac] 要求 mitac 扣款 START
-									$this->call_mitac_pay($parms['lpr'], $parms['ivsno'], $rows_cario);
-									// [mitac] 要求 mitac 扣款 END
-								}
-								
-								return true;
-                            }
-							*/
+							return true;
                             break;
 
                         default:
@@ -672,8 +627,11 @@ class Cars_model extends CI_Model
 								trigger_error( "..sync_st_out.." .  $sync_result);
 								
 								// [mitac] 要求 mitac 扣款 START
-								$this->call_mitac_pay($parms['lpr'], $parms['ivsno'], $rows_cario);
+								//$this->call_mitac_pay($parms['lpr'], $parms['ivsno'], $rows_cario);
 								// [mitac] 要求 mitac 扣款 END
+								
+								// 呼叫各扣款通知
+								$this->call_other_pay($parms, $rows_cario);
 							}
 							
 							return true;
@@ -1123,92 +1081,6 @@ class Cars_model extends CI_Model
 		}
 	}
 	
-	/*
-    // 有車牌與eTag, 檢查資料庫
-	public function check_lpr_etag($lpr, $etag)
-	{
-        // 用讀取eTag記錄(有double驗證過)
-        $rows = $this->db->select('etag, confirms')
-        			->from('etag_lpr')
-                    ->where(array('lpr' => $lpr))
-                    ->limit(1)
-                    ->get()
-                    ->row_array();
-
-        // 讀出eTag資料
-        if (!empty($rows['etag']))
-        {
-        	// 車牌與eTag皆相符, 檢查是否confirms欄位若為0, 設成1(double驗證)
-        	if ($rows['etag'] == $etag)
-            {
-            	if ($rows['confirms'] == 0) $this->db->where('lpr', $lpr)->update('etag_lpr', array('confirms' => 1));
-            }
-            else	// eTag不相符
-            {
-            	if ($rows['confirms'] == 1)
-                {
-                	$this->db->where('lpr', $lpr)->update('etag_lpr', array('confirms' => 0));
-                }
-                else 	// 原confirms為0者, 刪除之
-                {
-                	$this->db->delete('etag_lpr', array('lpr' => $lpr));
-                }
-            }
-        }
-        else	// 無資料, 新增一筆
-        {
-            // 再檢查一次是否有eTag ?
-        	$rows_etag = $this->db->select('lpr, confirms')
-        				->from('etag_lpr')
-                    	->where(array('etag' => $etag))
-                    	->limit(1)
-                    	->get()
-                    	->row_array();
-            if (empty($rows_etag['lpr']))	// 無資料
-            {
-        		$data = array
-            	(
-            		'lpr' => $lpr,
-                	'lpr_correct' => $lpr,
-                	'etag' => $etag
-            	);
-
-                // 檢查是否會員
-            	$rows_members = $this->db->select('member_no, member_name')
-        				->from('members')
-                    	->where(array('lpr' => $lpr))
-                    	->limit(1)
-                    	->get()
-                    	->row_array();
-
-                // 會員者, 將eTag update回去
-                if (!empty($rows_members['member_no']))
-                {
-                	$data['member_no'] = $rows_members['member_no'];
-                	$data['member_name'] = $rows_members['member_name'];
-
-                	$this->db->where('member_no', $rows_members['member_no'])->update('member_car', array('etag' => $etag));
-                	$this->db->where('member_no', $rows_members['member_no'])->update('members', array('etag' => $etag));
-                }
-
-            	$this->db->insert('etag_lpr', $data);
-            }
-            else
-            {
-            	if ($rows_etag['confirms'] == 1)
-                {
-                	$this->db->where('etag', $etag)->update('etag_lpr', array('confirms' => 0));
-                }
-                else 	// 原confirms為0者, 刪除之
-                {
-                	$this->db->delete('etag_lpr', array('etag' => $etag));
-                }
-            }
-        }
-    }
-	*/
-
-
     // 送出至message queue(目前用mqtt)
 	public function mq_send($topic, $msg)
 	{
@@ -1272,39 +1144,6 @@ class Cars_model extends CI_Model
 	public function get_valid_seat()
 	{
     	$data = array();
-		//$data['result']['location_no'] = '0';
-        //$data['result_code'] = 'FAIL';
-		//return $data;
-		
-		// 撈 roger db
-		/*
-		$sql = "
-			SELECT ParkingNum AS pksno FROM table_carpark 
-				WHERE LPR = '' AND DisableSeat = 0 AND 
-					(SELECT COUNT(*) FROM table_carpark WHERE LPR = '' AND DisableSeat = 0) <= 10
-			ORDER BY RAND() LIMIT 1 FOR UPDATE;
-			";
-		$dsn_old_db = $this->load->database('old_db', true);
-		
-		// 2016/12/14 roger_db 掛了的可能
-		if ($dsn_old_db->initialize())
-		{
-		   $retults = $dsn_old_db->query($sql)->result_array();
-		}
-			
-		if(!empty($retults[0]))
-		{
-			$data['result']['location_no'] = substr($retults[0]['pksno'], 1);
-			$data['result_code'] = 'OK';
-			$data['loc_name'] = 'B'.substr($retults[0]['pksno'], 0, 1);
-			$data['floors'] = 'B'.substr($retults[0]['pksno'], 0, 1);
-		}
-		else
-		{
-			$data['result']['location_no'] = '0';
-        	$data['result_code'] = 'FAIL';
-		}
-		*/
 		
         $this->db->trans_start();
         $sql = "select pksno from pks where status = 'VA' and prioritys != 0 and (book_time is null or book_time <= now()) order by prioritys asc limit 1 for update;";
@@ -1568,6 +1407,16 @@ class Cars_model extends CI_Model
 		return $member_result;	
 	}
 	
+	// 呼叫各扣款通知
+	function call_other_pay($parms, $rows_cario)
+	{
+		// 神通
+		$this->call_mitac_pay($parms['lpr'], $parms['ivsno'], $rows_cario);
+		
+		// 博辰
+		$this->cars2parktron($parms['lpr'], $rows_cario['in_time'], $rows_cario['pay_time'], $parms['ivsno']);
+	}
+	
 	// 要求 mitac 扣款
 	function call_mitac_pay($lpr, $ivsno, $rows_cario)
 	{
@@ -1652,18 +1501,46 @@ class Cars_model extends CI_Model
 	
 	
 	
-	
-	
-	// $this->cars2parktron($parms['lpr'], $rows_cario['in_time'], $rows_cario['pay_time'], $parms['ivsno']);
+	/*
+	cam0	4號門 出, 中間
+	cam1	4號門 出, 左
+	cam2	4號門 入, 左
+	cam3	4號門 入, 右
+	cam4	4號門 出, 右
+	cam5	3號門 出, 單
+	cam6	3號門 出, 單
+	cam7	??
+	cam8	1號門 入, 左
+	cam9	1號門 入, 右
+	cam10	1號門 入, 單
+	cam11	5號門 入
+	cam12	5號門 出
+	*/
 	// 傳送臨停資訊給博辰
     function cars2parktron($lpr, $in_time, $balance_time, $ivsno)
     {
-		//return true; // 2016/08/12 暫時先關上
-
 		$lanes = array
 		(
-			1 => array ('ip' => '192.168.10.80'),		// 四期出口
+			0 => array ('ip' => ''),		// 4號門 出, 中間	（傳送離場給博辰）
+			1 => array ('ip' => ''),		// 4號門 出, 左		（傳送離場給博辰）
+			2 => array ('ip' => ''),		// 4號門 入, 左
+			3 => array ('ip' => ''),		// 4號門 入, 右
+			4 => array ('ip' => ''),		// 4號門 出, 右		（傳送離場給博辰）
+			5 => array ('ip' => ''),		// 3號門 出, 單		（傳送離場給博辰）
+			6 => array ('ip' => ''),		// 3號門 出, 單		（傳送離場給博辰）
+			7 => array ('ip' => ''),		// ??
+			8 => array ('ip' => ''),		// 1號門 入, 左
+			9 => array ('ip' => ''),		// 1號門 入, 右
+			10 => array ('ip' => ''),		// 1號門 入, 單
+			11 => array ('ip' => ''),		// 5號門 入
+			12 => array ('ip' => '')		// 5號門 出			（傳送離場給博辰）
 		);
+		
+		if(empty($lanes[$ivsno]['ip']))
+		{
+			trigger_error(__FUNCTION__ . "|$lpr, $in_time, $balance_time, $ivsno|skip..");
+			return false;
+		}
 
     	$param = array
 			(
