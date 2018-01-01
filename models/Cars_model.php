@@ -1515,25 +1515,28 @@ class Cars_model extends CI_Model
 	cam10	1號門 入, 單
 	cam11	5號門 入
 	cam12	5號門 出
+	
+		3, 81~83
+		4, 84~86
 	*/
 	// 傳送臨停資訊給博辰
     function cars2parktron($lpr, $in_time, $balance_time, $ivsno)
     {
 		$lanes = array
 		(
-			0 => array ('ip' => ''),		// 4號門 出, 中間	（傳送離場給博辰）
-			1 => array ('ip' => ''),		// 4號門 出, 左		（傳送離場給博辰）
+			0 => array ('ip' => '192.168.2.85'),		// 4號門 出, 中間	（傳送離場給博辰）
+			1 => array ('ip' => '192.168.2.84'),		// 4號門 出, 左		（傳送離場給博辰）
 			2 => array ('ip' => ''),		// 4號門 入, 右
 			3 => array ('ip' => ''),		// 4號門 入, 左
-			4 => array ('ip' => ''),		// 4號門 出, 右		（傳送離場給博辰）
-			5 => array ('ip' => ''),		// 3號門 出, 單		（傳送離場給博辰）
-			6 => array ('ip' => ''),		// 3號門 出, 單		（傳送離場給博辰）
+			4 => array ('ip' => '192.168.2.86'),		// 4號門 出, 右		（傳送離場給博辰）
+			5 => array ('ip' => '192.168.2.81'),		// 3號門 出, 單		（傳送離場給博辰）
+			6 => array ('ip' => '192.168.2.82'),		// 3號門 出, 單		（傳送離場給博辰）
 			7 => array ('ip' => ''),		// ??
 			8 => array ('ip' => ''),		// 1號門 入, 左
 			9 => array ('ip' => ''),		// 1號門 入, 右
 			10 => array ('ip' => ''),		// 1號門 入, 單
 			11 => array ('ip' => ''),		// 5號門 入
-			12 => array ('ip' => '')		// 5號門 出			（傳送離場給博辰）
+			12 => array ('ip' => '')					// 5號門 出			（傳送離場給博辰）
 		);
 		
 		if(empty($lanes[$ivsno]['ip']))
@@ -1549,7 +1552,6 @@ class Cars_model extends CI_Model
     		'PrePaymentTime' => empty($balance_time) ? '2000-01-01 00:00:00' : $balance_time, // 最後繳費時間，格式為 “yyyy-MM-dd HH:mm:ss”，進場後還沒有任何繳費紀錄時填 “2000-01-01 00:00:00”
     		'AreaID' => '1'                       // 區域ID，同一停車場但收費費率不同時使用，例如:汽車->1，機車->2，此為例子，汽機車區域費率請依照現場狀況
     		);
-
 
 		trigger_error('cars2parktron param:'.print_r($param, true). ", device ip: {$lanes[$ivsno]['ip']}");
 
