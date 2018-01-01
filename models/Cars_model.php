@@ -1555,7 +1555,8 @@ class Cars_model extends CI_Model
 
 		try{
 			$ch = curl_init();
-			curl_setopt($ch, CURLOPT_URL, "http://{$lanes[$ivsno]['ip']}:8080/datatrans/Service1.asmx/CarPaying");
+			curl_setopt($ch, CURLOPT_URL, "http://{$lanes[$ivsno]['ip']}:10080/PlateExitCalculating/Service1.asmx/CarPaying");
+			//curl_setopt($ch, CURLOPT_URL, "http://{$lanes[$ivsno]['ip']}:8080/datatrans/Service1.asmx/CarPaying");
 			//curl_setopt($ch, CURLOPT_URL, 'http://www.parktron.com:8800/WebService/Service1.asmx/CarPaying'); // parktron webservice
 			//curl_setopt($ch, CURLOPT_URL, 'http://192.168.0.80/Service1.asmx/CarPaying'); // parktron webservice
 			curl_setopt($ch, CURLOPT_HEADER, FALSE);
