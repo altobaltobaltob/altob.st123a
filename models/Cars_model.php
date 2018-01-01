@@ -407,312 +407,353 @@ class Cars_model extends CI_Model
 
                 trigger_error("opendoor={$opendoor}| 出場讀到資料:{$rows['member_no']}|".time().'|'.print_r($rows_cario, true));
 
-                if (!empty($rows_cario['cario_no']))	// 在限時內可出場
-                {
-					$co_time_minutes = floor((strtotime($this->now_str) - strtotime($rows_cario['in_time'])) / 60); // 停車時數 (分鐘)
+				// 離場流程
+                return $this->do_carout($rows, $parms, $rows_cario, $opendoor);
+            	break;
+        }
+    }
+	
+	// 離場流程
+	function do_carout($rows, $parms, $rows_cario, $opendoor, $skip_check=false)
+	{
+		if (!empty($rows_cario['cario_no']))	// 在限時內可出場
+		{
+			$co_time_minutes = floor((strtotime($this->now_str) - strtotime($rows_cario['in_time'])) / 60); // 停車時數 (分鐘)
 					
-                    // 合規定者開門放行
-                    switch(true)
-                    {
-                    	case $rows['member_no'] != 0:
-							// CO.A.1 會員車
+			// 合規定者開門放行
+			switch(true)
+			{
+				case $rows['member_no'] != 0:
+					// CO.A.1 會員車
 							
-							// 場站會員身份特例判斷
-							if(!$this->check_member_valid($rows, $parms, $rows_cario))
-							{
-								trigger_error(__FUNCTION__ . "|TODO|會員身份無效, 臨停車流程");
-							}
-							
-							// 判斷時段租是否超時 (超過 12 小時)
-							if($rows['park_time'] != 'RE' && $co_time_minutes > 720)
-							{	
-								if($opendoor)
-								{
-									// [msg] 16: 時段租超時字幕
-									$msg_id = 16;
-									
-									// 字幕
-									$this->mq_send(MQ_TOPIC_ALTOB, MQ_ALTOB_MSG.",{$msg_id},{$parms['ivsno']},{$parms['lpr']}".MQ_ALTOB_MSG_END_TAG);
-									
-									// 產生回傳
-									return $this->gen_return_msg($msg_id);
-								}
-								else
-								{
-									$data = array
-									(
-										'out_time' => $this->now_str,
-										'out_lane' => $parms['ivsno'],
-										'minutes' => $co_time_minutes,
-										'out_pic_name' => $parms['pic_name']
-									);
-									$this->db->update('cario', $data, array('cario_no' => $rows_cario['cario_no']));	// 記錄出場
-									trigger_error("{$parms['lpr']}|時段租超時" . print_r($rows_cario, true));
-
-									// 傳送離場記錄	
-									$sync_agent = new AltobSyncAgent();
-									$sync_agent->init($parms['sno'], $this->now_str);
-									$sync_agent->cario_no = $rows_cario['cario_no'];		// 進出編號
-									$sync_agent->member_no = $rows['member_no'];			// 會員編號
-									$sync_agent->in_time = $rows_cario['in_time'];			// 入場時間
-									$sync_result = $sync_agent->sync_st_out($parms);
-									trigger_error( "..sync_st_out.." .  $sync_result);											
-								}
-								
-								return true;
-							}
-							
-							if($opendoor)
-							{
-								// [msg] 5: 會員離場開門
-								$msg_id = 5;
-								
-								// 會員開門
-								$this->member_opendoors($parms);
-								
-								// 字幕
-								$this->mq_send(MQ_TOPIC_ALTOB, MQ_ALTOB_MSG.",{$msg_id},{$parms['ivsno']},{$parms['lpr']}".MQ_ALTOB_MSG_END_TAG);
-								
-								// 產生回傳
-								return $this->gen_return_msg($msg_id, true);
-							}
-							else
-							{
-								$data = array
-								(
-									'in_out' => $parms['io'],
-									'finished' => 1,
-									'out_time' => $this->now_str,
-									'out_lane' => $parms['ivsno'],
-									'minutes' => $co_time_minutes,
-									'out_pic_name' => $parms['pic_name']
-								);
-								$this->db->update('cario', $data, array('cario_no' => $rows_cario['cario_no']));
-								trigger_error('會員車離場:' . print_r($rows, true));
-								
-								// 傳送離場記錄
-								$sync_agent = new AltobSyncAgent();
-								$sync_agent->init($parms['sno'], $this->now_str);
-								$sync_agent->cario_no = $rows_cario['cario_no'];		// 進出編號
-								$sync_agent->member_no = $rows['member_no'];			// 會員編號
-								$sync_agent->in_time = $rows_cario['in_time'];			// 入場時間
-								$sync_agent->finished = 1;								// 已離場
-								$sync_result = $sync_agent->sync_st_out($parms);
-								trigger_error( "..sync_st_out.." .  $sync_result);
-							}
-							
-							return true;
-                            break;
-
-                        case strtotime($rows_cario['out_before_time']) >= time():
-
-							// CO.B.1 臨停車可離場
-							
-                        	// [msg] 6: 臨停車已付款
-							// [msg] 8: 臨停車未付款 (可離場)
-							$msg_id = !empty($rows_cario['payed']) ? 6 : 8;							
-								
-							if($opendoor)
-							{
-								// 臨停開門
-								$this->temp_opendoors($parms);
-									
-								// 字幕
-								$this->mq_send(MQ_TOPIC_ALTOB, MQ_ALTOB_MSG.",{$msg_id},{$parms['ivsno']},{$parms['lpr']}".MQ_ALTOB_MSG_END_TAG);
-									
-								// 產生回傳
-								return $this->gen_return_msg($msg_id, true);
-							}
-							else
-							{
-								$data = array
-								(
-									'in_out' => $parms['io'],
-									'finished' => 1,
-									'out_time' => $this->now_str,
-									'out_lane' => $parms['ivsno'],
-									'minutes' => $co_time_minutes,
-									'out_pic_name' => $parms['pic_name']
-								);
-								$this->db->update('cario', $data, array('cario_no' => $rows_cario['cario_no']));
-								trigger_error('臨停車可離場:' . print_r($rows, true));
-									
-								// 傳送離場記錄
-								$sync_agent = new AltobSyncAgent();
-								$sync_agent->init($parms['sno'], $this->now_str);
-								$sync_agent->cario_no = $rows_cario['cario_no'];		// 進出編號
-								$sync_agent->in_time = $rows_cario['in_time'];			// 入場時間
-								$sync_agent->finished = 1;								// 已離場
-								$sync_result = $sync_agent->sync_st_out($parms);
-								trigger_error( "..sync_st_out.." .  $sync_result);
-							}
-								
-							return true;
-                            break;
-
-                        default:
-							// CO.C.1 其它付款方式
-							if($opendoor)
-							{
-								$in_time = strtotime($rows_cario['out_before_time']);
-								$ck = md5($in_time. $parms['lpr'] . $parms['sno']);
-								//$jdata = file_get_contents("http://localhost/allpa_service.html/allpa_go/{$in_time}/{$parms['lpr']}/{$parms['sno']}/{$ck}");
-								$jdata = file_get_contents("http://localhost/allpa_service.html/allpa_go_remote/{$in_time}/{$parms['lpr']}/{$parms['sno']}/{$ck}");
-								trigger_error("allpa回傳:{$jdata}|{$in_time}/{$parms['lpr']}/{$parms['sno']}/{$ck}");
-								$results = json_decode($jdata, true);
-								if (isset($results['result_code']))	// 歐pa卡, 點數足夠扣
-								{
-									if($results['result_code'] == 0)
-									{
-										// [msg] 7: 歐pa卡付款
-										$msg_id = 7;
-										
-										// 臨停開門
-										$this->temp_opendoors($parms);
-										
-										// 歐pa卡, 字幕
-										$this->mq_send(MQ_TOPIC_ALTOB, MQ_ALTOB_MSG.",{$msg_id},{$parms['ivsno']},{$parms['lpr']},{$results['amt']}".MQ_ALTOB_MSG_END_TAG);
-										
-										$data = array(
-												'out_before_time' =>  date('Y-m-d H:i:s', strtotime(" + 15 minutes")),
-												'pay_time' => $this->now_str,
-												'pay_type' => 9, // 歐pa卡
-												'payed' => 1
-											);
-										$this->db->update('cario', $data, array('cario_no' => $rows_cario['cario_no']));	// 記錄出場
-										
-										// 產生回傳
-										return $this->gen_return_msg($msg_id, true);
-									}
-									else if ($results['result_code'] == 12)	// 歐pa卡, 餘額不足
-									{
-										// [msg] 12: 歐pa卡, 餘額不足
-										$msg_id = 12;
-									}
-									else if ($results['result_code'] == 11)	// 歐pa卡, 查無會員
-									{
-										// [msg] 9: 其它付款方式
-										$msg_id = 9;
-									}
-									else
-									{
-										// [msg] 9: 其它付款方式
-										$msg_id = 9;
-									}
-								}
-								else
-								{
-									// [msg] 9: 其它付款方式
-									$msg_id = 9;
-								}
-								
-								// 字幕
-								$this->mq_send(MQ_TOPIC_ALTOB, MQ_ALTOB_MSG.",{$msg_id},{$parms['ivsno']},{$parms['lpr']}".MQ_ALTOB_MSG_END_TAG);
-										
-								// 產生回傳
-								return $this->gen_return_msg($msg_id);
-							}
-							else
-							{
-								$data = array
-								(
-									'out_time' => $this->now_str,
-									'out_lane' => $parms['ivsno'],
-									'minutes' => $co_time_minutes,
-									'out_pic_name' => $parms['pic_name']
-								);
-								$this->db->update('cario', $data, array('cario_no' => $rows_cario['cario_no']));	// 記錄出場
-								trigger_error("{$parms['lpr']}|其它付款方式:" . print_r($rows_cario, true));
-								
-								// 傳送離場記錄
-								$sync_agent = new AltobSyncAgent();
-								$sync_agent->init($parms['sno'], $this->now_str);
-								$sync_agent->cario_no = $rows_cario['cario_no'];		// 進出編號
-								$sync_agent->in_time = $rows_cario['in_time'];			// 入場時間
-								$sync_result = $sync_agent->sync_st_out($parms);
-								trigger_error( "..sync_st_out.." .  $sync_result);
-								
-								// [mitac] 要求 mitac 扣款 START
-								//$this->call_mitac_pay($parms['lpr'], $parms['ivsno'], $rows_cario);
-								// [mitac] 要求 mitac 扣款 END
-								
-								// 呼叫各扣款通知
-								$this->call_other_pay($parms, $rows_cario);
-							}
-							
-							return true;
-                            break;
-                    }
-
-                }
-                else if ($rows['member_no'] != 0)
-				{
 					// 場站會員身份特例判斷
-					if(!$this->check_member_valid($rows, $parms, $rows_cario))
+					if(!$skip_check && !$this->check_member_valid($rows, $parms, $rows_cario))
 					{
-						trigger_error(__FUNCTION__ . "|TODO|會員身份無效, 臨停車流程");
+						trigger_error(__FUNCTION__ . "|會員身份 CO.A.1 無效, 臨停車流程|".print_r($rows, true));
+						
+						// 準備臨停車設定
+						unset($parms['member_no']);
+						
+						$rows = array
+						(
+							'lpr_correct' => '',
+							'member_no' => 0,
+							'member_name' => '',
+							'member_type' => 9,
+							'etag' => '',
+							'start_time' => '',
+							'end_time' => '',
+						);
+						
+						// 離場流程
+						$this->do_carout($rows, $parms, $rows_cario, $opendoor, true);
 					}
-					
-					// CO.Z.1 月租車無入場資料
+							
+					// 判斷時段租是否超時 (超過 12 小時)
+					if($rows['park_time'] != 'RE' && $co_time_minutes > 720)
+					{	
+						if($opendoor)
+						{
+							// [msg] 16: 時段租超時字幕
+							$msg_id = 16;
+									
+							// 字幕
+							$this->mq_send(MQ_TOPIC_ALTOB, MQ_ALTOB_MSG.",{$msg_id},{$parms['ivsno']},{$parms['lpr']}".MQ_ALTOB_MSG_END_TAG);
+									
+							// 產生回傳
+							return $this->gen_return_msg($msg_id);
+						}
+						else
+						{
+							$data = array
+							(
+								'out_time' => $this->now_str,
+								'out_lane' => $parms['ivsno'],
+								'minutes' => $co_time_minutes,
+								'out_pic_name' => $parms['pic_name']
+							);
+							$this->db->update('cario', $data, array('cario_no' => $rows_cario['cario_no']));	// 記錄出場
+							trigger_error("{$parms['lpr']}|時段租超時" . print_r($rows_cario, true));
+
+							// 傳送離場記錄	
+							$sync_agent = new AltobSyncAgent();
+							$sync_agent->init($parms['sno'], $this->now_str);
+							$sync_agent->cario_no = $rows_cario['cario_no'];		// 進出編號
+							$sync_agent->member_no = $rows['member_no'];			// 會員編號
+							$sync_agent->in_time = $rows_cario['in_time'];			// 入場時間
+							$sync_result = $sync_agent->sync_st_out($parms);
+							trigger_error( "..sync_st_out.." .  $sync_result);											
+						}
+								
+						return true;
+					}
+							
 					if($opendoor)
 					{
-						// [msg] 10: 月租車無入場資料
-						$msg_id = 10;
-									
+						// [msg] 5: 會員離場開門
+						$msg_id = 5;
+						
 						// 會員開門
 						$this->member_opendoors($parms);
-						
-						// 會員字幕
+							
+						// 字幕
 						$this->mq_send(MQ_TOPIC_ALTOB, MQ_ALTOB_MSG.",{$msg_id},{$parms['ivsno']},{$parms['lpr']}".MQ_ALTOB_MSG_END_TAG);
-						
+								
 						// 產生回傳
 						return $this->gen_return_msg($msg_id, true);
 					}
 					else
 					{
-						trigger_error('月租車無入場資料:' . print_r($rows, true));
+						$data = array
+						(
+							'in_out' => $parms['io'],
+							'finished' => 1,
+							'out_time' => $this->now_str,
+							'out_lane' => $parms['ivsno'],
+							'minutes' => $co_time_minutes,
+							'out_pic_name' => $parms['pic_name']
+						);
+						$this->db->update('cario', $data, array('cario_no' => $rows_cario['cario_no']));
+						trigger_error('會員車離場:' . print_r($rows, true));
 						
 						// 傳送離場記錄
 						$sync_agent = new AltobSyncAgent();
 						$sync_agent->init($parms['sno'], $this->now_str);
+						$sync_agent->cario_no = $rows_cario['cario_no'];		// 進出編號
 						$sync_agent->member_no = $rows['member_no'];			// 會員編號
+						$sync_agent->in_time = $rows_cario['in_time'];			// 入場時間
 						$sync_agent->finished = 1;								// 已離場
 						$sync_result = $sync_agent->sync_st_out($parms);
 						trigger_error( "..sync_st_out.." .  $sync_result);
 					}
 					
 					return true;
-				}
-				else
-				{
-					// CO.Z.Z 無入場資料
+					break;
+
+				case strtotime($rows_cario['out_before_time']) >= time():
+
+					// CO.B.1 臨停車可離場
+							
+                    // [msg] 6: 臨停車已付款
+					// [msg] 8: 臨停車未付款 (可離場)
+					$msg_id = !empty($rows_cario['payed']) ? 6 : 8;							
+								
 					if($opendoor)
 					{
-						// [msg] 13: 無入場資料
-						$msg_id = 13;
-						
+						// 臨停開門
+						$this->temp_opendoors($parms);
+							
+						// 字幕
 						$this->mq_send(MQ_TOPIC_ALTOB, MQ_ALTOB_MSG.",{$msg_id},{$parms['ivsno']},{$parms['lpr']}".MQ_ALTOB_MSG_END_TAG);
-						
+							
+						// 產生回傳
+						return $this->gen_return_msg($msg_id, true);
+					}
+					else
+					{
+						$data = array
+						(
+							'in_out' => $parms['io'],
+							'finished' => 1,
+							'out_time' => $this->now_str,
+							'out_lane' => $parms['ivsno'],
+							'minutes' => $co_time_minutes,
+							'out_pic_name' => $parms['pic_name']
+						);
+						$this->db->update('cario', $data, array('cario_no' => $rows_cario['cario_no']));
+						trigger_error('臨停車可離場:' . print_r($rows, true));
+							
+						// 傳送離場記錄
+						$sync_agent = new AltobSyncAgent();
+						$sync_agent->init($parms['sno'], $this->now_str);
+						$sync_agent->cario_no = $rows_cario['cario_no'];		// 進出編號
+						$sync_agent->in_time = $rows_cario['in_time'];			// 入場時間
+						$sync_agent->finished = 1;								// 已離場
+						$sync_result = $sync_agent->sync_st_out($parms);
+						trigger_error( "..sync_st_out.." .  $sync_result);
+					}
+								
+					return true;
+					break;
+
+				default:
+					// CO.C.1 其它付款方式
+					if($opendoor)
+					{
+						$in_time = strtotime($rows_cario['out_before_time']);
+						$ck = md5($in_time. $parms['lpr'] . $parms['sno']);
+						//$jdata = file_get_contents("http://localhost/allpa_service.html/allpa_go/{$in_time}/{$parms['lpr']}/{$parms['sno']}/{$ck}");
+						$jdata = file_get_contents("http://localhost/allpa_service.html/allpa_go_remote/{$in_time}/{$parms['lpr']}/{$parms['sno']}/{$ck}");
+						trigger_error("allpa回傳:{$jdata}|{$in_time}/{$parms['lpr']}/{$parms['sno']}/{$ck}");
+						$results = json_decode($jdata, true);
+						if (isset($results['result_code']))	// 歐pa卡, 點數足夠扣
+						{
+							if($results['result_code'] == 0)
+							{
+								// [msg] 7: 歐pa卡付款
+								$msg_id = 7;
+								
+								// 臨停開門
+								$this->temp_opendoors($parms);
+								
+								// 歐pa卡, 字幕
+								$this->mq_send(MQ_TOPIC_ALTOB, MQ_ALTOB_MSG.",{$msg_id},{$parms['ivsno']},{$parms['lpr']},{$results['amt']}".MQ_ALTOB_MSG_END_TAG);
+								
+								$data = array(
+									'out_before_time' =>  date('Y-m-d H:i:s', strtotime(" + 15 minutes")),
+									'pay_time' => $this->now_str,
+									'pay_type' => 9, // 歐pa卡
+									'payed' => 1
+								);
+								$this->db->update('cario', $data, array('cario_no' => $rows_cario['cario_no']));	// 記錄出場
+										
+								// 產生回傳
+								return $this->gen_return_msg($msg_id, true);
+							}
+							else if ($results['result_code'] == 12)	// 歐pa卡, 餘額不足
+							{
+								// [msg] 12: 歐pa卡, 餘額不足
+								$msg_id = 12;
+							}
+							else if ($results['result_code'] == 11)	// 歐pa卡, 查無會員
+							{
+								// [msg] 9: 其它付款方式
+								$msg_id = 9;
+							}
+							else
+							{
+								// [msg] 9: 其它付款方式
+								$msg_id = 9;
+							}
+						}
+						else
+						{
+							// [msg] 9: 其它付款方式
+							$msg_id = 9;
+						}
+							
+						// 字幕
+						$this->mq_send(MQ_TOPIC_ALTOB, MQ_ALTOB_MSG.",{$msg_id},{$parms['ivsno']},{$parms['lpr']}".MQ_ALTOB_MSG_END_TAG);
+										
 						// 產生回傳
 						return $this->gen_return_msg($msg_id);
 					}
 					else
 					{
-						trigger_error('無入場資料:' . print_r($rows, true));
+						$data = array
+						(
+							'out_time' => $this->now_str,
+							'out_lane' => $parms['ivsno'],
+							'minutes' => $co_time_minutes,
+							'out_pic_name' => $parms['pic_name']
+						);
+						$this->db->update('cario', $data, array('cario_no' => $rows_cario['cario_no']));	// 記錄出場
+						trigger_error("{$parms['lpr']}|其它付款方式:" . print_r($rows_cario, true));
 						
 						// 傳送離場記錄
 						$sync_agent = new AltobSyncAgent();
 						$sync_agent->init($parms['sno'], $this->now_str);
+						$sync_agent->cario_no = $rows_cario['cario_no'];		// 進出編號
+						$sync_agent->in_time = $rows_cario['in_time'];			// 入場時間
 						$sync_result = $sync_agent->sync_st_out($parms);
 						trigger_error( "..sync_st_out.." .  $sync_result);
+						
+						// [mitac] 要求 mitac 扣款 START
+						//$this->call_mitac_pay($parms['lpr'], $parms['ivsno'], $rows_cario);
+						// [mitac] 要求 mitac 扣款 END
+						
+						// 呼叫各扣款通知
+						$this->call_other_pay($parms, $rows_cario);
 					}
 					
 					return true;
-				}
-            	break;
-        }
+					break;
+			}
 
-    }
+		}
+		else if ($rows['member_no'] != 0)
+		{
+			// CO.Z.1 月租車無入場資料
+			
+			// 場站會員身份特例判斷
+			if(!$skip_check && !$this->check_member_valid($rows, $parms, $rows_cario))
+			{
+				trigger_error(__FUNCTION__ . "|會員身份 CO.Z.1 無效, 臨停車流程|".print_r($rows, true));
+				
+				// 準備臨停車設定
+				unset($parms['member_no']);
+						
+				$rows = array
+				(
+					'lpr_correct' => '',
+					'member_no' => 0,
+					'member_name' => '',
+					'member_type' => 9,
+					'etag' => '',
+					'start_time' => '',
+					'end_time' => '',
+				);
+						
+				// 離場流程
+				$this->do_carout($rows, $parms, $rows_cario, $opendoor, true);
+			}
+					
+			if($opendoor)
+			{
+				// [msg] 10: 月租車無入場資料
+				$msg_id = 10;
+							
+				// 會員開門
+				$this->member_opendoors($parms);
+				
+				// 會員字幕
+				$this->mq_send(MQ_TOPIC_ALTOB, MQ_ALTOB_MSG.",{$msg_id},{$parms['ivsno']},{$parms['lpr']}".MQ_ALTOB_MSG_END_TAG);
+				
+				// 產生回傳
+				return $this->gen_return_msg($msg_id, true);
+			}
+			else
+			{
+				trigger_error('月租車無入場資料:' . print_r($rows, true));
+						
+				// 傳送離場記錄
+				$sync_agent = new AltobSyncAgent();
+				$sync_agent->init($parms['sno'], $this->now_str);
+				$sync_agent->member_no = $rows['member_no'];			// 會員編號
+				$sync_agent->finished = 1;								// 已離場
+				$sync_result = $sync_agent->sync_st_out($parms);
+				trigger_error( "..sync_st_out.." .  $sync_result);
+			}
+			
+			return true;
+		}
+		else
+		{
+			// CO.Z.Z 無入場資料
+			if($opendoor)
+			{
+				// [msg] 13: 無入場資料
+				$msg_id = 13;
+				
+				$this->mq_send(MQ_TOPIC_ALTOB, MQ_ALTOB_MSG.",{$msg_id},{$parms['ivsno']},{$parms['lpr']}".MQ_ALTOB_MSG_END_TAG);
+				
+				// 產生回傳
+				return $this->gen_return_msg($msg_id);
+			}
+			else
+			{
+				trigger_error('無入場資料:' . print_r($rows, true));
+				
+				// 傳送離場記錄
+				$sync_agent = new AltobSyncAgent();
+				$sync_agent->init($parms['sno'], $this->now_str);
+				$sync_result = $sync_agent->sync_st_out($parms);
+				trigger_error( "..sync_st_out.." .  $sync_result);
+			}
+			
+			return true;
+		}
+	}
 
 	// 確認身份是否有效
 	function check_member_valid($rows, $parms, $rows_cario)
