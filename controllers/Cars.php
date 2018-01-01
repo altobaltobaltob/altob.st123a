@@ -72,7 +72,7 @@ class Cars extends CC_Controller
 		$parms['lpr'] = urldecode($parms['lpr']); // 中文車牌
 		
 		// 同步並送出一次出入口 888
-		$this->data_model()->sync_888($parms);
+		//$this->data_model()->sync_888($parms);
                                                                   
         $pic_folder = CAR_PIC.$this->vars['date_num'].'/';		// 今日資料夾名(yyyymmdd)
         if (!file_exists($pic_folder))	mkdir($pic_folder);		// 如果資料夾不存在, 建立日期資料夾
