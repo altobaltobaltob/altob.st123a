@@ -535,7 +535,7 @@ class Cars_model extends CI_Model
 									'out_pic_name' => $parms['pic_name']
 								);
 								$this->db->update('cario', $data, array('cario_no' => $rows_cario['cario_no']));
-								trigger_error('臨停車已付款:' . print_r($rows, true));
+								trigger_error('臨停車可離場:' . print_r($rows, true));
 									
 								// 傳送離場記錄
 								$sync_agent = new AltobSyncAgent();
