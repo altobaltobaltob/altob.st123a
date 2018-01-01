@@ -417,6 +417,12 @@ class Cars_model extends CI_Model
                     	case $rows['member_no'] != 0:
 							// CO.A.1 會員車
 							
+							// 場站會員身份特例判斷
+							if(!$this->check_member_valid($rows, $parms, $rows_cario))
+							{
+								trigger_error(__FUNCTION__ . "|TODO|會員身份無效, 臨停車流程");
+							}
+							
 							// 判斷時段租是否超時 (超過 12 小時)
 							if($rows['park_time'] != 'RE' && $co_time_minutes > 720)
 							{	
@@ -641,6 +647,12 @@ class Cars_model extends CI_Model
                 }
                 else if ($rows['member_no'] != 0)
 				{
+					// 場站會員身份特例判斷
+					if(!$this->check_member_valid($rows, $parms, $rows_cario))
+					{
+						trigger_error(__FUNCTION__ . "|TODO|會員身份無效, 臨停車流程");
+					}
+					
 					// CO.Z.1 月租車無入場資料
 					if($opendoor)
 					{
@@ -702,6 +714,54 @@ class Cars_model extends CI_Model
 
     }
 
+	// 確認身份是否有效
+	function check_member_valid($rows, $parms, $rows_cario)
+	{
+		$is_member_valid = true;
+							
+		// 中榮南區限制
+		if($parms['sno'] == 40701)
+		{
+			// 時段限制
+			if(isset($rows['member_attr']) && in_array($rows['member_attr'], array(250)))
+			{
+				//	平日 17:00 ~ 23:59, 00:00 ~ 09:00 開放
+				//	假日 00:00 ~ 23:59 開放
+									
+				$vip_check_value = 0;
+									
+				//  TODO: 判斷進出場時間, 都在時段內才放人
+				$out_time_value = substr($this->now_str, 11);				// 日期字串只取最後時間字串(13:25:32)
+				$out_week_value = date('w',strtotime($this->now_str));		// 取星期幾 
+				if(isset($rows_cario['in_time']))
+				{
+					$in_time_value = substr($rows_cario['in_time'], 11);			// 日期字串只取最後時間字串(13:25:32)
+					$in_week_value = date('w',strtotime($rows_cario['in_time']));	// 取星期幾 	
+				}
+				else
+				{
+					$in_time_value = $out_time_value;
+					$in_week_value = $out_week_value;
+				}
+									
+				// TODO
+									
+				if($vip_check_value >= 2)
+				{
+					trigger_error(__FUNCTION__ . "|{$rows['member_attr']}|case 1|時段限制");
+					$is_member_valid = false;	
+				}
+			}
+			// 身份限制
+			else if(isset($rows['member_attr']) && in_array($rows['member_attr'], array(201, 203)))
+			{
+				trigger_error(__FUNCTION__ . "|{$rows['member_attr']}|case 2|身份限制");
+				$is_member_valid = false;
+			}
+		}
+		
+		return $is_member_valid;
+	}
 
     // 檢查是否合法會員或VIP資料
 	public function get_member($lpr)
@@ -723,6 +783,7 @@ class Cars_model extends CI_Model
 				m.park_time,
 				m.suspended,
 				m.valid_time,
+				m.member_attr,
                 c.etag,
                 c.start_time,
                 c.end_time
@@ -830,7 +891,7 @@ class Cars_model extends CI_Model
             	'end_time' => '',
             );
 		}
-		
+							
         trigger_error('讀取會員:' . print_r($rows, true) . ", park_time_check: {$park_time_check}");
 		/*
 		// 20171025 強制先不導入會員
@@ -1338,7 +1399,7 @@ class Cars_model extends CI_Model
 	function check_member_state($lpr, $in_time, $out_time)
 	{
 		// 檢查月租身份修正
-		$member_info = $this->get_member($lpr, false);
+		$member_info = $this->get_member($lpr);
 		
 		if ($member_info['member_no'] == 0)
 		{
