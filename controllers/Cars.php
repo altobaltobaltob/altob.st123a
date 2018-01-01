@@ -51,7 +51,7 @@ class Cars extends CC_Controller
 	public function get_opendoor()
 	{
 		// 初始 mqtt
-		$this->init_mqtt();
+		$this->init_mqtt(true);
 		
 		// 執行
 		$parms = $this->uri->uri_to_assoc(3);

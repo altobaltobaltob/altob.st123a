@@ -144,9 +144,16 @@ class CC_Controller extends CI_Controller
 	}
 	
 	// 啟動 MQTT
-	public function init_mqtt()
+	public function init_mqtt($offline=false)
 	{
 		require_once(MQ_CLASS_FILE); 
+		if($offline)
+		{
+			$this->vars['mqtt'] = new phpMQTT(MQ_HOST, MQ_PORT, uniqid());
+			$this->vars['mqtt']->connect();
+			return false;
+		}
+		
 		$station_setting = $this->data_model()->station_setting_query();
 		$mqtt_ip = isset($station_setting['mqtt_ip']) ? $station_setting['mqtt_ip'] : MQ_HOST;
 		$mqtt_port = isset($station_setting['mqtt_port']) ? $station_setting['mqtt_port'] : MQ_PORT;
