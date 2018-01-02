@@ -7,6 +7,29 @@ class Carpark_model extends CI_Model
 {             
     var $vars = array();
 	
+	var $lanes = array
+		(
+			0 => array ('name' => '4號門(中) 出'),
+			1 => array ('name' => '4號門(左) 出'),
+			2 => array ('name' => '4號門(右) 入'),
+			3 => array ('name' => '4號門(左) 入'),
+			4 => array ('name' => '4號門(右) 出'),
+			5 => array ('name' => '3號門A 出'),
+			6 => array ('name' => '3號門B 出'),
+			7 => array ('name' => '??'),
+			8 => array ('name' => '1號門(左) 入'),
+			9 => array ('name' => '1號門(右) 入'),
+			10 => array ('name' => '1號門 入'),
+			11 => array ('name' => '5號門 入'),
+			12 => array ('name' => '5號門 出')
+		);
+	
+	// 車道進出名稱
+	function gen_io_name($rows)
+	{
+		return empty($rows['out_time']) ? $this->lanes[$rows['in_lane']]['name'] : $this->lanes[$rows['in_lane']]['name'] . " -> " . $this->lanes[$rows['out_lane']]['name'];
+	}
+	
 	function __construct()
 	{
 		parent::__construct(); 
@@ -102,7 +125,6 @@ class Carpark_model extends CI_Model
         
         return true; 
     }    
-    
      
     // 進出場現況表
 	public function cario_list() 
@@ -128,15 +150,16 @@ class Carpark_model extends CI_Model
 				order by time_order desc limit 10;'; 
         $data_cario = $this->db->query($sql)->result_array();
                                               
-        // $lane_arr = array(0 => '入1', 1 => '入2', 3 => '出3', 3 => '出4');         
+        // $lane_arr = array(0 => '入1', 1 => '入2', 3 => '出3', 3 => '出4');   
+
         $idx = 0;   
         foreach($data_cario as $rows)
         {                                
-        	++$rows['in_lane'];
-        	++$rows['out_lane'];  
+        	//++$rows['in_lane'];
+        	//++$rows['out_lane'];  
                                     
             //$lane_no = $rows['in_out'] == 'CI' ? "入{$rows['in_lane']}" : "入{$rows['in_lane']} -> 出{$rows['out_lane']}";
-			$lane_no = empty($rows['out_time']) ? "入{$rows['in_lane']}" : "入{$rows['in_lane']} -> 出{$rows['out_lane']}"; // 2016/08/22 有離場時間就顯示
+			//$lane_no = empty($rows['out_time']) ? "入{$rows['in_lane']}" : "入{$rows['in_lane']} -> 出{$rows['out_lane']}"; // 2016/08/22 有離場時間就顯示
             
 	        $pic_name = str_replace('.jpg', '', empty($rows['out_pic_name']) ? $rows['in_pic_name'] : $rows['out_pic_name']);
             $arr = explode('-', $pic_name);
@@ -147,7 +170,7 @@ class Carpark_model extends CI_Model
               	// 'io_name' => $io_name[$rows['in_out']],
 				'cario_no' => $rows['cario_no'],
 				
-              	'io_name' => $lane_no,
+              	'io_name' => $this->gen_io_name($rows),
               	'lpr' => $rows['lpr'],
               	// 'etag' => $rows['etag'],
               	'etag' => $rows['etag'],
@@ -237,10 +260,10 @@ class Carpark_model extends CI_Model
         $idx = 0;   
         foreach($data_cario as $rows)
         {                                
-        	++$rows['in_lane'];
-        	++$rows['out_lane'];    
+        	//++$rows['in_lane'];
+        	//++$rows['out_lane'];    
             
-			$lane_no = empty($rows['out_time']) ? "入{$rows['in_lane']}" : "入{$rows['in_lane']} -> 出{$rows['out_lane']}"; 
+			//$lane_no = empty($rows['out_time']) ? "入{$rows['in_lane']}" : "入{$rows['in_lane']} -> 出{$rows['out_lane']}"; 
             $io_time = empty($rows['out_time']) ? $rows['in_time'] : "{$rows['in_time']}(入)<br>{$rows['out_time']}(出)<br>{$rows['minutes']}分(停留時間)";
 			
 	        $pic_name = str_replace('.jpg', '', empty($rows['out_pic_name']) ? $rows['in_pic_name'] : $rows['out_pic_name']);
@@ -249,7 +272,7 @@ class Carpark_model extends CI_Model
             
             $data[$idx++] = array
             (
-              	'io_name' => $lane_no,
+              	'io_name' => $this->gen_io_name($rows),
               	'lpr' => $rows['lpr'],
               	'etag' => $rows['etag'],
               	'owner' => empty($rows['owner']) ? '' : $rows['owner'],
@@ -284,10 +307,10 @@ class Carpark_model extends CI_Model
         $idx = 0;   
         foreach($data_cario as $rows)
         {                                
-        	++$rows['in_lane'];
-        	++$rows['out_lane'];    
+        	//++$rows['in_lane'];
+        	//++$rows['out_lane'];    
             
-			$lane_no = empty($rows['out_time']) ? "入{$rows['in_lane']}" : "入{$rows['in_lane']} -> 出{$rows['out_lane']}"; 
+			//$lane_no = empty($rows['out_time']) ? "入{$rows['in_lane']}" : "入{$rows['in_lane']} -> 出{$rows['out_lane']}"; 
             $io_time = empty($rows['out_time']) ? $rows['in_time'] : "{$rows['in_time']}(入)<br>{$rows['out_time']}(出)<br>{$rows['minutes']}分(停留時間)";                    
             
 	        $pic_name = str_replace('.jpg', '', empty($rows['out_pic_name']) ? $rows['in_pic_name'] : $rows['out_pic_name']);
@@ -296,7 +319,7 @@ class Carpark_model extends CI_Model
             
             $data[$idx++] = array
             (
-              	'io_name' => $lane_no,
+              	'io_name' => $this->gen_io_name($rows),
               	'lpr' => $rows['lpr'],
               	'etag' => $rows['etag'],
               	'owner' => empty($rows['owner']) ? '' : $rows['owner'],
@@ -334,10 +357,10 @@ class Carpark_model extends CI_Model
         $idx = 0;   
         foreach($data_cario as $rows)
         {                                
-        	++$rows['in_lane'];
-        	++$rows['out_lane'];    
+        	//++$rows['in_lane'];
+        	//++$rows['out_lane'];    
             
-			$lane_no = empty($rows['out_time']) ? "入{$rows['in_lane']}" : "入{$rows['in_lane']} -> 出{$rows['out_lane']}"; 
+			$//lane_no = empty($rows['out_time']) ? "入{$rows['in_lane']}" : "入{$rows['in_lane']} -> 出{$rows['out_lane']}"; 
             $io_time = empty($rows['out_time']) ? $rows['in_time'] : "{$rows['in_time']}(入)<br>{$rows['out_time']}(出)<br>{$rows['minutes']}分(停留時間)";                    
             
 	        $pic_name = str_replace('.jpg', '', empty($rows['out_pic_name']) ? $rows['in_pic_name'] : $rows['out_pic_name']);
@@ -347,7 +370,7 @@ class Carpark_model extends CI_Model
             $data[$idx++] = array
             (
 				'cario_no' => $rows['cario_no'],
-              	'io_name' => $lane_no,
+              	'io_name' => $this->gen_io_name($rows),
               	'lpr' => $rows['lpr'],
               	'etag' => $rows['etag'],
               	'owner' => '',
