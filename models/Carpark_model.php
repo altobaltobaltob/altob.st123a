@@ -360,8 +360,8 @@ class Carpark_model extends CI_Model
         	//++$rows['in_lane'];
         	//++$rows['out_lane'];    
             
-			$//lane_no = empty($rows['out_time']) ? "入{$rows['in_lane']}" : "入{$rows['in_lane']} -> 出{$rows['out_lane']}"; 
-            $io_time = empty($rows['out_time']) ? $rows['in_time'] : "{$rows['in_time']}(入)<br>{$rows['out_time']}(出)<br>{$rows['minutes']}分(停留時間)";                    
+			//$lane_no = empty($rows['out_time']) ? "入{$rows['in_lane']}" : "入{$rows['in_lane']} -> 出{$rows['out_lane']}"; 
+            $io_time = empty($rows['out_time']) ? $rows['in_time'] : "{$rows['in_time']}(入)<br>{$rows['out_time']}(出)<br>{$rows['minutes']}分(停留時間)";                      
             
 	        $pic_name = str_replace('.jpg', '', empty($rows['out_pic_name']) ? $rows['in_pic_name'] : $rows['out_pic_name']);
             $arr = explode('-', $pic_name);
@@ -377,6 +377,8 @@ class Carpark_model extends CI_Model
               	'io_time' => $io_time,
               	'pic_name' => $pic_path
             );            
+			
+			//trigger_error(__FUNCTION__ . '..' .print_r($rows, true));
         }
             
         return $data; 
