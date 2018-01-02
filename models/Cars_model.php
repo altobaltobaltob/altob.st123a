@@ -122,7 +122,7 @@ class Cars_model extends CI_Model
             }
             else	// 車辨失敗但有eTag, 查詢是否有車號
             {
-            	//$parms['lpr'] = $this->etag2lpr_2($parms['etag']); // 2017/01/10 預設都不用 ETAG 找車牌
+            	$parms['lpr'] = $this->etag2lpr_2($parms['etag']); // 2018/01/02 啟用 ETAG 找車牌
             }
         }
 
@@ -150,7 +150,7 @@ class Cars_model extends CI_Model
             }
             else	// 車辨失敗但有eTag, 查詢是否有車號
             {
-            	// $parms['lpr'] = $this->etag2lpr_2($parms['etag']); // 2017/01/10 預設都不用 ETAG 找車牌
+            	$parms['lpr'] = $this->etag2lpr_2($parms['etag']); // 2018/01/02 啟用 ETAG 找車牌
             }
         }
 
@@ -973,7 +973,7 @@ class Cars_model extends CI_Model
         // 用讀取eTag記錄(有double驗證過)
         $rows = $this->db->select('lpr')
         			->from('etag_lpr')
-                    ->where(array('etag' => $etag, 'confirms >' => 0))
+                    ->where(array('etag' => $etag, 'confirms >' => 10))
                     ->limit(1)
                     ->get()
                     ->row_array();
