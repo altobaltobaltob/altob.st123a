@@ -562,7 +562,11 @@ class Carpayment_model extends CI_Model
 					$tmp_data = $this->gen_query_data($result_lpr);			// 模糊搜尋
 				}
 				
-				if($tmp_data['in_time'] == '')
+				if($tmp_data['ticket'] == 1)
+				{
+					trigger_error("月租車, 直接乎略這筆[{$result_lpr}]:".print_r($rows, true));
+				}
+				else if($tmp_data['in_time'] == '')
 				{
 					// 若查無入場時間, 直接乎略這筆
 					trigger_error("查無入場時間, 直接乎略這筆[{$result_lpr}]:".print_r($rows, true));
