@@ -58,7 +58,7 @@ class Cars extends CC_Controller
 		$parms['lpr'] = urldecode($parms['lpr']); // 中文車牌
 		
 		$return_msg = $this->app_model()->opendoor_lprio($parms);
-		trigger_error(__FUNCTION__ . "|{$parms['sno']}|{$parms['io']}|{$parms['lpr']}|return_msg|" . $return_msg);
+		trigger_error(__FUNCTION__ . "|{$parms['sno']}|{$parms['ivsno']}|{$parms['io']}|{$parms['lpr']}|return_msg|" . $return_msg);
 		
 		echo $return_msg;
 		exit;
@@ -109,7 +109,7 @@ class Cars extends CC_Controller
         $parms['pic_name'] = $config['file_name'];	// 圖片檔名 
         
         $return_msg = $this->app_model()->lprio($parms);
-		trigger_error(__FUNCTION__ . "|{$parms['sno']}|{$parms['io']}|{$parms['lpr']}|return_msg|" . $return_msg);
+		trigger_error(__FUNCTION__ . "|{$parms['sno']}|{$parms['ivsno']}|{$parms['io']}|{$parms['lpr']}|return_msg|" . $return_msg);
 	}
 	
 	// ------------------------------------
