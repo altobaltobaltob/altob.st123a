@@ -797,7 +797,7 @@ class Cars_model extends CI_Model
 			else if(isset($rows['member_attr']) && in_array($rows['member_attr'], array(201, 203)))
 			{
 				trigger_error(__FUNCTION__ . "|{$rows['member_attr']}|case 2|身份限制");
-				$is_member_valid = false;
+				//$is_member_valid = false;
 			}
 		}
 		

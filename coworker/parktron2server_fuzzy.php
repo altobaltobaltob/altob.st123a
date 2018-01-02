@@ -17,7 +17,7 @@ curl_setopt($ch, CURLOPT_POST, true); // 啟用POST
 $tcp_worker = new Worker("tcp://0.0.0.0:8068");      
 
 // 啟動N個進程對外提供服務
-$tcp_worker->count = 6;
+$tcp_worker->count = 12;
 
 $tcp_worker->onConnect = function($connection)
 {
