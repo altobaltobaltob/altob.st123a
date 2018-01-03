@@ -57,6 +57,10 @@ class Cars extends CC_Controller
 		$parms = $this->uri->uri_to_assoc(3);
 		$parms['lpr'] = urldecode($parms['lpr']); // 中文車牌
 		
+		// 無 etag
+		if(empty($parms['etag']))
+			$parms['etag'] = 'NONE';
+		
 		$return_msg = $this->app_model()->opendoor_lprio($parms);
 		trigger_error(__FUNCTION__ . "|{$parms['sno']}|{$parms['ivsno']}|{$parms['io']}|{$parms['lpr']}|return_msg|" . $return_msg);
 		
@@ -70,6 +74,10 @@ class Cars extends CC_Controller
 		// 執行	
     	$parms = $this->uri->uri_to_assoc(3);
 		$parms['lpr'] = urldecode($parms['lpr']); // 中文車牌
+		
+		// 無 etag
+		if(empty($parms['etag']))
+			$parms['etag'] = 'NONE';
 		
 		// 同步並送出一次出入口 888
 		//$this->data_model()->sync_888($parms);
