@@ -212,7 +212,7 @@ class Cars_model extends CI_Model
 				
 				// [msg] 0: 不處理
 				$msg_id = 0;
-				return $this->gen_return_msg($msg_id);
+				return $this->gen_return_msg($msg_id, true);  // 2018/01/03 放人
 			}
 		}
 		// [END] 擋重覆
@@ -227,7 +227,7 @@ class Cars_model extends CI_Model
 			
 				$this->mq_send(MQ_TOPIC_ALTOB, MQ_ALTOB_MSG.",{$msg_id},{$parms['ivsno']}".MQ_ALTOB_MSG_END_TAG);
 				
-				return $this->gen_return_msg($msg_id);
+				return $this->gen_return_msg($msg_id, true); // 2018/01/03 放人
 			}
 			else
 			{
