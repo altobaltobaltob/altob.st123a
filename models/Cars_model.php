@@ -446,11 +446,11 @@ class Cars_model extends CI_Model
 						);
 						
 						// 離場流程
-						$this->do_carout($rows, $parms, $rows_cario, $opendoor, true);
+						return $this->do_carout($rows, $parms, $rows_cario, $opendoor, true);
 					}
 							
 					// 判斷時段租是否超時 (超過 12 小時)
-					if($rows['park_time'] != 'RE' && $co_time_minutes > 720)
+					if(isset($rows['park_time']) && $rows['park_time'] != 'RE' && $co_time_minutes > 720)
 					{	
 						if($opendoor)
 						{
@@ -760,48 +760,83 @@ class Cars_model extends CI_Model
 	{
 		$is_member_valid = true;
 							
-		// 中榮南區限制
+		// 中榮南區
 		if($parms['sno'] == 40701)
 		{
-			// 時段限制
-			if(isset($rows['member_attr']) && in_array($rows['member_attr'], array(250)))
+			// 時段限制 (員工)
+			if(isset($rows['member_attr']) && in_array($rows['member_attr'], array(4)))
 			{
-				//	平日 17:00 ~ 23:59, 00:00 ~ 09:00 開放
-				//	假日 00:00 ~ 23:59 開放
+				$park_time = 'S1809,HO';
+				$pt_arr = array(
+					'S1809' => array(
+							'timex' => array(
+											'0' => array('type' => 1, 'w_start' => 1, 'w_end' => 5, 'time_start' => '17:00:00', 'time_end' => '23:59:59'),
+											'1' => array('type' => 1, 'w_start' => 1, 'w_end' => 5, 'time_start' => '00:00:00', 'time_end' => '08:59:59')
+										),
+							'remarks' => '平日 17:00:00 ~ 23:59:59, 00:00:00 ~ 08:59:59 開放'
+					),
+					'HO' => array(
+							'timex' => array(
+											'0' => array('type' => 1, 'w_start' => 6, 'w_end' => 6, 'time_start' => '00:00:00', 'time_end' => '23:59:59'),
+											'1' => array('type' => 1, 'w_start' => 0, 'w_end' => 0, 'time_start' => '00:00:00', 'time_end' => '23:59:59')
+										),
+							'remarks' => '假日全天開放'
+					)
+				);
 									
-				$vip_check_value = 0;
-									
-				//  TODO: 判斷進出場時間, 都在時段內才放人
-				$out_time_value = substr($this->now_str, 11);				// 日期字串只取最後時間字串(13:25:32)
-				$out_week_value = date('w',strtotime($this->now_str));		// 取星期幾 
+				// 入場時間判斷
 				if(isset($rows_cario['in_time']))
 				{
 					$in_time_value = substr($rows_cario['in_time'], 11);			// 日期字串只取最後時間字串(13:25:32)
 					$in_week_value = date('w',strtotime($rows_cario['in_time']));	// 取星期幾 	
+					if(!$this->park_time_check($park_time, $pt_arr, $in_week_value, $in_time_value))
+					{
+						trigger_error(__FUNCTION__ . "|{$parms['lpr']}|{$rows['member_attr']}|入場時間未達標");
+						$is_member_valid = false;	// 入場時間未達標
+					}
 				}
-				else
+				
+				// 離場時間判斷
+				$out_time_value = substr($this->now_str, 11);						// 日期字串只取最後時間字串(13:25:32)
+				$out_week_value = date('w',strtotime($this->now_str));				// 取星期幾
+				if(!$this->park_time_check($park_time, $pt_arr, $out_week_value, $out_time_value))
 				{
-					$in_time_value = $out_time_value;
-					$in_week_value = $out_week_value;
-				}
-									
-				// TODO
-									
-				if($vip_check_value >= 2)
-				{
-					trigger_error(__FUNCTION__ . "|{$rows['member_attr']}|case 1|時段限制");
-					$is_member_valid = false;	
+					trigger_error(__FUNCTION__ . "|{$parms['lpr']}|{$rows['member_attr']}|離場時間未達標");
+					$is_member_valid = false;		// 離場時間未達標
 				}
 			}
-			// 身份限制
-			else if(isset($rows['member_attr']) && in_array($rows['member_attr'], array(201, 203)))
+			// 身份限制 (機車)
+			else if(isset($rows['member_attr']) && in_array($rows['member_attr'], array(203)))
 			{
-				trigger_error(__FUNCTION__ . "|{$rows['member_attr']}|case 2|身份限制");
-				//$is_member_valid = false;
+				trigger_error(__FUNCTION__ . "|{$parms['lpr']}|{$rows['member_attr']}|身份限制");
+				$is_member_valid = false;
 			}
 		}
 		
 		return $is_member_valid;
+	}
+	
+	// 取得時段值
+	function park_time_check($park_time, $pt_arr, $week_no, $now_time)
+	{
+		$park_time_check = false;
+		$park_time_array = explode(',', $park_time);		// 用 , 格開
+		foreach($park_time_array as $idx => $park_time_value)
+		{
+			foreach($pt_arr[$park_time_value]['timex'] as $idx => $pt_rows)
+			{
+				if ($week_no >= $pt_rows['w_start'] && 
+					$week_no <= $pt_rows['w_end'] && 
+					$now_time >= $pt_rows['time_start'] && 
+					$now_time <= $pt_rows['time_end'])
+					{
+						$park_time_check = true;
+						trigger_error(__FUNCTION__ . ", 時段代碼:{$park_time_value} 星期:{$week_no}");
+						break;
+					}
+			}
+		}
+		return $park_time_check;
 	}
 
     // 檢查是否合法會員或VIP資料
