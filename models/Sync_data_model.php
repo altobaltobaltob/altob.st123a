@@ -248,22 +248,23 @@ class Sync_data_model extends CI_Model
 		if($is_renum)
 		{	
 			// 一般微調
-			if($value == 0)
+			if($value == 999)
 			{
-				$this->db->where($where_group_arr)
-						->update('pks_groups', array('renum' => 0, 'parked' => 0, 'availables' => $tot));
-				trigger_error(__FUNCTION__ . '..reset everything and exit..');
+				// 滿車
+				$this->db->where($where_group_arr)->update('pks_groups', array('renum' => 0, 'parked' => $tot, 'availables' => 0));
+				trigger_error(__FUNCTION__ . '..set full and exit..');
 				return true;	// 中斷
 			}
-			else if($value >= 1)
+			else if(in_array($value, array( -100, -10, -1, 1, 10, 100 )))
 			{
-				// 增加
-				$renum = $renum + 1;
+				$renum = $renum + $value;
 			}
 			else
 			{
-				// 減少
-				$renum = $renum - 1;
+				// 重設
+				$this->db->where($where_group_arr)->update('pks_groups', array('renum' => 0, 'parked' => 0, 'availables' => $tot));
+				trigger_error(__FUNCTION__ . '..reset everything and exit..');
+				return true;	// 中斷
 			}
 			
 			$availables = $tot - $parked + $renum;
