@@ -1681,13 +1681,6 @@ class Cars_model extends CI_Model
 			trigger_error(__FUNCTION__ . "|$lpr, $in_time, $balance_time, $ivsno|skip..");
 			return false;
 		}
-		
-		// 超過一天就擋掉
-		if(strtotime($balance_time) - strtotime($in_time) > 86400)
-		{
-			trigger_error(__FUNCTION__ . "|超過計費時限|skip parktron|$lpr, $in_time, $balance_time, $ivsno");
-			return false;	// 跳過 parktron
-		}
 
     	$param = array
 			(
@@ -1697,6 +1690,13 @@ class Cars_model extends CI_Model
     		'AreaID' => '1'                       // 區域ID，同一停車場但收費費率不同時使用，例如:汽車->1，機車->2，此為例子，汽機車區域費率請依照現場狀況
     		);
 
+		// 超過一天就擋掉
+		if(strtotime($param['PrePaymentTime']) - strtotime($param['EntryDateTime']) > 86400)
+		{
+			trigger_error(__FUNCTION__ . "|超過計費時限|skip parktron|$lpr, $in_time, $balance_time, $ivsno");
+			return false;	// 跳過 parktron
+		}	
+			
 		trigger_error('cars2parktron param:'.print_r($param, true). ", device ip: {$lanes[$ivsno]['ip']}");
 
 		try{
