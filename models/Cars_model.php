@@ -1548,7 +1548,7 @@ class Cars_model extends CI_Model
 	function call_other_pay($parms, $rows_cario)
 	{
 		// 神通
-		$this->call_mitac_pay($parms['lpr'], $parms['ivsno'], $rows_cario);
+		//$this->call_mitac_pay($parms['lpr'], $parms['ivsno'], $rows_cario);
 		
 		// 博辰
 		$this->cars2parktron($parms['lpr'], $rows_cario['in_time'], $rows_cario['pay_time'], $parms['ivsno']);
@@ -1680,6 +1680,13 @@ class Cars_model extends CI_Model
 		{
 			trigger_error(__FUNCTION__ . "|$lpr, $in_time, $balance_time, $ivsno|skip..");
 			return false;
+		}
+		
+		// 超過一天就擋掉
+		if(strtotime($balance_time) - strtotime($in_time) > 86400)
+		{
+			trigger_error(__FUNCTION__ . "|超過計費時限|skip parktron|$lpr, $in_time, $balance_time, $ivsno");
+			return false;	// 跳過 parktron
 		}
 
     	$param = array
