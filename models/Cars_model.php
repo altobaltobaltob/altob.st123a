@@ -575,8 +575,53 @@ class Cars_model extends CI_Model
 								
 					return true;
 					break;
-
+					
+				// 2018/01/08 - 已繳費超時一段時間, 忽略此入場記錄
+				case $co_time_minutes > 720 && !empty($rows_cario['payed']):
+					
+					// CO.B.1b 已繳費超時一段時間, 忽略此入場記錄
+					trigger_error(__FUNCTION__ . "|臨停車 CO.B.1b 已繳費超時一段時間, 忽略此入場記錄|$co_time_minutes|" . print_r($rows_cario, true));
+					
+					if($opendoor)
+					{
+						// [msg] 13: 無入場資料
+						$msg_id = 13;
+						
+						$this->mq_send(MQ_TOPIC_ALTOB, MQ_ALTOB_MSG.",{$msg_id},{$parms['ivsno']},{$parms['lpr']}".MQ_ALTOB_MSG_END_TAG);
+						
+						// 產生回傳
+						return $this->gen_return_msg($msg_id, true); // 2018/01/03 放人
+					}
+					else
+					{
+						$data = array
+						(
+							'in_out' => $parms['io'],
+							'finished' => 1,
+							'out_time' => $this->now_str,
+							'out_lane' => $parms['ivsno'],
+							'minutes' => $co_time_minutes,
+							'out_pic_name' => $parms['pic_name']
+						);
+						$this->db->update('cario', $data, array('cario_no' => $rows_cario['cario_no']));
+						
+						trigger_error('(超時) 忽略入場資料:' . print_r($rows_cario, true));
+							
+						// 傳送離場記錄
+						$sync_agent = new AltobSyncAgent();
+						$sync_agent->init($parms['sno'], $this->now_str);
+						$sync_agent->cario_no = $rows_cario['cario_no'];		// 進出編號
+						$sync_agent->in_time = $rows_cario['in_time'];			// 入場時間
+						$sync_agent->finished = 1;								// 已離場
+						$sync_result = $sync_agent->sync_st_out($parms);
+						trigger_error( "..sync_st_out.." .  $sync_result);
+					}
+					
+					return true;
+					break;
+					
 				default:
+				
 					// CO.C.1 其它付款方式
 					if($opendoor)
 					{
