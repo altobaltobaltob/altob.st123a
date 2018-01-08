@@ -334,7 +334,7 @@ class Carpayment_model extends CI_Model
 		// 2018/01/08 - 已繳過不能再繳
 		$sql = "SELECT obj_id as lpr, ticket_no
 				FROM cario
-				WHERE {$fuzzy_statement} AND finished = 0 AND err = 0
+				WHERE {$fuzzy_statement} AND finished = 0 AND err = 0 AND payed = 0 
 				AND out_before_time > DATE_SUB(CURRENT_TIMESTAMP, INTERVAL 3 DAY)
 				GROUP BY obj_id 
 				ORDER BY out_before_time DESC";
