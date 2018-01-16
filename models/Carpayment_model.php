@@ -553,6 +553,8 @@ class Carpayment_model extends CI_Model
 	{          
 		$fuzzy_result = $this->q_fuzzy_pks($lpr);
 		
+		$data_count = 0;
+		
 		if(!empty($fuzzy_result) && count($fuzzy_result) > 0)
 		{
 			$data = array();
@@ -583,12 +585,15 @@ class Carpayment_model extends CI_Model
 				else
 				{
 					$data['results'][$idx] = $tmp_data;	
+					$data_count++;
 				}
 				
 			}
-			$data['count'] = count($fuzzy_result);
+			$data['count'] = $data_count;
 		}
-		else
+		
+		// 查無資料
+		if($data_count == 0)
 		{
 			$data_0 = array();
 			$data_0['lpr'] = str_pad($lpr, 7, ' ', STR_PAD_RIGHT);
