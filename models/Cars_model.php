@@ -10,8 +10,34 @@ class Cars_model extends CI_Model
 {
     var $vars = array();
 
-    var $io_name = array('I' => '車入', 'O' => '車出', 'MI' => '機入', 'MO' => '機出', 'FI' => '樓入', 'FO' => '樓出');
     var $now_str;
+	
+	// 車道
+	var $lanes = array
+		(
+			40701 => array
+				(
+					0 => array ('name' => '4號門(中) 出',	'p_ip' => '192.168.2.85'),	// 4號門 出, 中間	（傳送離場給博辰）
+					1 => array ('name' => '4號門(左) 出',	'p_ip' => '192.168.2.84'),	// 4號門 出, 左		（傳送離場給博辰）
+					2 => array ('name' => '4號門(右) 入',	'p_ip' => ''),				// 4號門 入, 右
+					3 => array ('name' => '4號門(左) 入',	'p_ip' => ''),				// 4號門 入, 左
+					4 => array ('name' => '4號門(右) 出',	'p_ip' => '192.168.2.86'),	// 4號門 出, 右		（傳送離場給博辰）
+					5 => array ('name' => '3號門A 出',		'p_ip' => '192.168.2.81'),	// 3號門 出, 單		（傳送離場給博辰）
+					6 => array ('name' => '3號門B 出',		'p_ip' => '192.168.2.82'),	// 3號門 出, 單		（傳送離場給博辰）
+					7 => array ('name' => '??',				'p_ip' => ''),				// ??
+					8 => array ('name' => '1號門(左) 入',	'p_ip' => ''),				// 1號門 入, 左
+					9 => array ('name' => '1號門(右) 入',	'p_ip' => ''),				// 1號門 入, 右
+					10 => array ('name' => '1號門 入',		'p_ip' => ''),				// 1號門 入, 單
+					11 => array ('name' => '5號門 入',		'p_ip' => ''),				// 5號門 入
+					12 => array ('name' => '5號門 出',		'p_ip' => '')				// 5號門 出			（傳送離場給博辰）
+				),
+			40702 => array
+				(
+					0 => array ('name' => '入0',	'p_ip' => ''),	// 無
+					1 => array ('name' => '入1',	'p_ip' => ''),	// 無
+					2 => array ('name' => '出2',	'p_ip' => '')	// 無
+				)
+		);
 
 	function __construct()
 	{
@@ -1596,7 +1622,7 @@ class Cars_model extends CI_Model
 		//$this->call_mitac_pay($parms['lpr'], $parms['ivsno'], $rows_cario);
 		
 		// 博辰
-		$this->cars2parktron($parms['lpr'], $rows_cario['in_time'], $rows_cario['pay_time'], $parms['ivsno']);
+		$this->cars2parktron($parms['lpr'], $rows_cario['in_time'], $rows_cario['pay_time'], $parms['ivsno'], $parms['sno']);
 	}
 	
 	// 要求 mitac 扣款
@@ -1702,31 +1728,15 @@ class Cars_model extends CI_Model
 		4, 84~86
 	*/
 	// 傳送臨停資訊給博辰
-    function cars2parktron($lpr, $in_time, $balance_time, $ivsno)
+    function cars2parktron($lpr, $in_time, $balance_time, $ivsno, $station_no)
     {
-		$lanes = array
-		(
-			0 => array ('ip' => '192.168.2.85'),		// 4號門 出, 中間	（傳送離場給博辰）
-			1 => array ('ip' => '192.168.2.84'),		// 4號門 出, 左		（傳送離場給博辰）
-			2 => array ('ip' => ''),		// 4號門 入, 右
-			3 => array ('ip' => ''),		// 4號門 入, 左
-			4 => array ('ip' => '192.168.2.86'),		// 4號門 出, 右		（傳送離場給博辰）
-			5 => array ('ip' => '192.168.2.81'),		// 3號門 出, 單		（傳送離場給博辰）
-			6 => array ('ip' => '192.168.2.82'),		// 3號門 出, 單		（傳送離場給博辰）
-			7 => array ('ip' => ''),		// ??
-			8 => array ('ip' => ''),		// 1號門 入, 左
-			9 => array ('ip' => ''),		// 1號門 入, 右
-			10 => array ('ip' => ''),		// 1號門 入, 單
-			11 => array ('ip' => ''),		// 5號門 入
-			12 => array ('ip' => '')					// 5號門 出			（傳送離場給博辰）
-		);
-		
-		if(empty($lanes[$ivsno]['ip']))
+		if(!isset($this->lanes[$station_no]) || empty($this->lanes[$station_no][$ivsno]['p_ip']))
 		{
-			trigger_error(__FUNCTION__ . "|$lpr, $in_time, $balance_time, $ivsno|skip..");
+			trigger_error(__FUNCTION__ . "|$lpr, $in_time, $balance_time, $ivsno, $station_no|skip..");
 			return false;
 		}
 
+		$p_ip = $this->lanes[$station_no][$ivsno]['p_ip'];
     	$param = array
 			(
     		'PlateNo' => $lpr,                    // 車牌號碼
@@ -1738,15 +1748,15 @@ class Cars_model extends CI_Model
 		// 超過一天就擋掉
 		if(strtotime($param['PrePaymentTime']) - strtotime($param['EntryDateTime']) > 86400)
 		{
-			trigger_error(__FUNCTION__ . "|超過計費時限|skip parktron|$lpr, $in_time, $balance_time, $ivsno");
+			trigger_error(__FUNCTION__ . "|超過計費時限|skip parktron|$lpr, $in_time, $balance_time, $ivsno, $station_no");
 			return false;	// 跳過 parktron
 		}	
 			
-		trigger_error('cars2parktron param:'.print_r($param, true). ", device ip: {$lanes[$ivsno]['ip']}");
+		trigger_error('cars2parktron param:'.print_r($param, true). ", p_ip: {$p_ip}");
 
 		try{
 			$ch = curl_init();
-			curl_setopt($ch, CURLOPT_URL, "http://{$lanes[$ivsno]['ip']}:10080/PlateExitCalculating/Service1.asmx/CarPaying");
+			curl_setopt($ch, CURLOPT_URL, "http://{$p_ip}:10080/PlateExitCalculating/Service1.asmx/CarPaying");
 			//curl_setopt($ch, CURLOPT_URL, "http://{$lanes[$ivsno]['ip']}:8080/datatrans/Service1.asmx/CarPaying");
 			//curl_setopt($ch, CURLOPT_URL, 'http://www.parktron.com:8800/WebService/Service1.asmx/CarPaying'); // parktron webservice
 			//curl_setopt($ch, CURLOPT_URL, 'http://192.168.0.80/Service1.asmx/CarPaying'); // parktron webservice

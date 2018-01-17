@@ -7,27 +7,40 @@ class Carpark_model extends CI_Model
 {             
     var $vars = array();
 	
+	// 車道
 	var $lanes = array
 		(
-			0 => array ('name' => '4號門(中) 出'),
-			1 => array ('name' => '4號門(左) 出'),
-			2 => array ('name' => '4號門(右) 入'),
-			3 => array ('name' => '4號門(左) 入'),
-			4 => array ('name' => '4號門(右) 出'),
-			5 => array ('name' => '3號門A 出'),
-			6 => array ('name' => '3號門B 出'),
-			7 => array ('name' => '??'),
-			8 => array ('name' => '1號門(左) 入'),
-			9 => array ('name' => '1號門(右) 入'),
-			10 => array ('name' => '1號門 入'),
-			11 => array ('name' => '5號門 入'),
-			12 => array ('name' => '5號門 出')
+			40701 => array
+				(
+					0 => array ('name' => '4號門(中) 出'),
+					1 => array ('name' => '4號門(左) 出'),
+					2 => array ('name' => '4號門(右) 入'),
+					3 => array ('name' => '4號門(左) 入'),
+					4 => array ('name' => '4號門(右) 出'),
+					5 => array ('name' => '3號門A 出'),
+					6 => array ('name' => '3號門B 出'),
+					7 => array ('name' => '??'),
+					8 => array ('name' => '1號門(左) 入'),
+					9 => array ('name' => '1號門(右) 入'),
+					10 => array ('name' => '1號門 入'),
+					11 => array ('name' => '5號門 入'),
+					12 => array ('name' => '5號門 出')
+				),
+			40702 => array
+				(
+					0 => array ('name' => '入0'),
+					1 => array ('name' => '入1'),
+					2 => array ('name' => '出2')
+				)
 		);
 	
 	// 車道進出名稱
 	function gen_io_name($rows)
 	{
-		return empty($rows['out_time']) ? $this->lanes[$rows['in_lane']]['name'] : $this->lanes[$rows['in_lane']]['name'] . " -> " . $this->lanes[$rows['out_lane']]['name'];
+		if(!isset($this->lanes[$rows['station_no']]))
+			return empty($rows['out_time']) ? "入口 {$rows['in_lane']}" : "入口 {$rows['in_lane']} -> 出口 {$rows['out_lane']}";
+		
+		return empty($rows['out_time']) ? $this->lanes[$rows['station_no']][$rows['in_lane']]['name'] : $this->lanes[$rows['station_no']][$rows['in_lane']]['name'] . " -> " . $this->lanes[$rows['station_no']][$rows['out_lane']]['name'];
 	}
 	
 	function __construct()
@@ -140,11 +153,11 @@ class Carpark_model extends CI_Model
                     ->get()
                     ->result_array();
         */ 
-        $sql = '(select c.cario_no, c.in_out, in_lane, out_lane, c.in_time, c.out_time, c.minutes, c.obj_id as lpr, c.etag, c.in_pic_name, c.out_pic_name, m.member_name as owner, c.in_time as time_order 
+        $sql = '(select c.station_no, c.cario_no, c.in_out, in_lane, out_lane, c.in_time, c.out_time, c.minutes, c.obj_id as lpr, c.etag, c.in_pic_name, c.out_pic_name, m.member_name as owner, c.in_time as time_order 
 					from cario c left join members m on c.obj_id = m.lpr 
 					where c.err = 0 and c.out_time is null) 
 				union 
-				(select c.cario_no, c.in_out, in_lane, out_lane, c.in_time, c.out_time, c.minutes, c.obj_id as lpr, c.etag, c.in_pic_name, c.out_pic_name, m.member_name as owner, c.out_time as time_order 
+				(select c.station_no, c.cario_no, c.in_out, in_lane, out_lane, c.in_time, c.out_time, c.minutes, c.obj_id as lpr, c.etag, c.in_pic_name, c.out_pic_name, m.member_name as owner, c.out_time as time_order 
 					from cario c left join members m on c.obj_id = m.lpr 
 					where c.err = 0 and c.out_time is not null) 
 				order by time_order desc limit 10;'; 
@@ -237,7 +250,7 @@ class Carpark_model extends CI_Model
 		$fuzzy_statement = $this->getLevenshteinSQLStatement($word, 'c.obj_id');
 		trigger_error("模糊比對 {$word} where: {$fuzzy_statement}");
 		
-		$sql = "SELECT c.cario_no, c.in_out, in_lane, out_lane, c.in_time, c.out_time, c.minutes, c.obj_id as lpr, c.etag, c.in_pic_name, c.out_pic_name, m.member_name as owner
+		$sql = "SELECT c.station_no, c.cario_no, c.in_out, in_lane, out_lane, c.in_time, c.out_time, c.minutes, c.obj_id as lpr, c.etag, c.in_pic_name, c.out_pic_name, m.member_name as owner
 				FROM cario c 
 				LEFT JOIN members m ON c.obj_id = m.lpr 
 				WHERE {$fuzzy_statement} AND c.err = 0 AND c.obj_type = 1 
@@ -295,7 +308,7 @@ class Carpark_model extends CI_Model
     	$end_time = date('Y-m-d H:i:s', strtotime("{$time_query} + {$minutes_range} minutes"));
         
     	$data_cario = $this->db
-        ->select('c.cario_no, c.in_out, in_lane, out_lane, c.in_time, c.out_time, c.minutes, c.obj_id as lpr, c.etag, c.in_pic_name, c.out_pic_name, m.member_name as owner')
+        ->select('c.station_no, c.cario_no, c.in_out, in_lane, out_lane, c.in_time, c.out_time, c.minutes, c.obj_id as lpr, c.etag, c.in_pic_name, c.out_pic_name, m.member_name as owner')
         ->from('cario c')
         ->join('members m', 'c.obj_id = m.lpr', 'left') 
         ->where(array('c.obj_type' => 1, 'c.in_time >=' => $start_time, 'c.in_time <=' => $end_time)) 
@@ -341,7 +354,7 @@ class Carpark_model extends CI_Model
     	$end_time = date('Y-m-d H:i:s', strtotime("{$time_query} + {$hours_range} hours"));
         
     	$data_cario = $this->db
-        ->select('c.cario_no, c.in_out, in_lane, out_lane, c.in_time, c.out_time, c.minutes, c.obj_id as lpr, c.etag, c.in_pic_name, c.out_pic_name')
+        ->select('c.station_no, c.cario_no, c.in_out, in_lane, out_lane, c.in_time, c.out_time, c.minutes, c.obj_id as lpr, c.etag, c.in_pic_name, c.out_pic_name')
         ->from('cario c')
         ->where(array(	'c.in_time >=' => $start_time, 
 						'c.in_time <=' => $end_time, 
