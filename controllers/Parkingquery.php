@@ -122,16 +122,6 @@ class Parkingquery extends CI_Controller
         $data['result_code'] = 'OK'; 
         echo json_encode($data, JSON_UNESCAPED_UNICODE); 
     }
-	
-	// 查詢各樓層剩餘車位 (type 10)
-	public function check_space_10()
-	{
-    	$seqno = $this->uri->segment(3);
-        $data = $this->parkingquery_model->check_space(0, 10);
-        $data['result']['num'] = $seqno; 
-        $data['result_code'] = 'OK'; 
-        echo json_encode($data, JSON_UNESCAPED_UNICODE); 
-	}
     	   
     // 查詢各樓層剩餘車位 
 	public function check_space() 
@@ -169,29 +159,52 @@ class Parkingquery extends CI_Controller
     	$lpr = $this->uri->segment(3);
         $data = $this->parkingquery_model->check_location($lpr);
         echo json_encode($data, JSON_UNESCAPED_UNICODE); 
-    }      
+    }   
+
+	// 停車位置查詢 (2)
+	public function check_location2() 
+	{       
+    	$lpr = $this->uri->segment(3);
+        $data = $this->parkingquery_model->check_location2($lpr);
+        echo json_encode($data, JSON_UNESCAPED_UNICODE); 
+    }	
     
     // 空車位導引
 	public function get_valid_seat() 
 	{                                          
-    	$pksno = $this->uri->segment(3, 0);	// 從某一個車位開始, 若無則設0 
-        $data = $this->parkingquery_model->get_valid_seat($pksno);
+    	$pksno = $this->uri->segment(3, 0);		// 從某一個車位開始, 若無則設0 
+		$group_id = $this->uri->segment(4, 0);	// 指定樓層群組
+		
+		if(empty($group_id))
+			$group_id = '';
+		
+        $data = $this->parkingquery_model->get_valid_seat($pksno, 1, $group_id);
         echo json_encode($data, JSON_UNESCAPED_UNICODE); 
     }    
 	
 	// 空車位導引 (身障)
 	public function get_valid_seat2() 
 	{                                          
-    	$pksno = $this->uri->segment(3, 0);	// 從某一個車位開始, 若無則設0 
-        $data = $this->parkingquery_model->get_valid_seat($pksno, 3);
+    	$pksno = $this->uri->segment(3, 0);		// 從某一個車位開始, 若無則設0 
+		$group_id = $this->uri->segment(4, 0);	// 指定樓層群組
+		
+		if(empty($group_id))
+			$group_id = '';
+		
+        $data = $this->parkingquery_model->get_valid_seat($pksno, 3, $group_id);
         echo json_encode($data, JSON_UNESCAPED_UNICODE); 
     }
     
 	// 空車位導引 (婦友)
 	public function get_valid_seat3() 
 	{                                          
-    	$pksno = $this->uri->segment(3, 0);	// 從某一個車位開始, 若無則設0 
-        $data = $this->parkingquery_model->get_valid_seat($pksno, 4);
+    	$pksno = $this->uri->segment(3, 0);		// 從某一個車位開始, 若無則設0 
+		$group_id = $this->uri->segment(4, 0);	// 指定樓層群組
+		
+		if(empty($group_id))
+			$group_id = '';
+		
+        $data = $this->parkingquery_model->get_valid_seat($pksno, 4, $group_id);
         echo json_encode($data, JSON_UNESCAPED_UNICODE); 
     }
     
