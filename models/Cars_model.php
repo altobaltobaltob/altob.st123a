@@ -39,6 +39,15 @@ class Cars_model extends CI_Model
 				)
 		);
 
+	// 車道進出名稱
+	function gen_io_name($rows)
+	{
+		if(!isset($this->lanes[$rows['station_no']]))
+			return empty($rows['out_time']) ? "入口 {$rows['in_lane']}" : "入口 {$rows['in_lane']} -> 出口 {$rows['out_lane']}";
+		
+		return empty($rows['out_time']) ? $this->lanes[$rows['station_no']][$rows['in_lane']]['name'] : $this->lanes[$rows['station_no']][$rows['in_lane']]['name'] . " -> " . $this->lanes[$rows['station_no']][$rows['out_lane']]['name'];
+	}
+		
 	function __construct()
 	{
 		parent::__construct();

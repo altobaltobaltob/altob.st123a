@@ -3,51 +3,14 @@
 file: carpark_model.php 停車管理系統
 */                   
 
-class Carpark_model extends CI_Model 
+class Carpark_model extends CC_Model 
 {             
     var $vars = array();
 	
-	// 車道
-	var $lanes = array
-		(
-			40701 => array
-				(
-					0 => array ('name' => '4號門(中) 出'),
-					1 => array ('name' => '4號門(左) 出'),
-					2 => array ('name' => '4號門(右) 入'),
-					3 => array ('name' => '4號門(左) 入'),
-					4 => array ('name' => '4號門(右) 出'),
-					5 => array ('name' => '3號門A 出'),
-					6 => array ('name' => '3號門B 出'),
-					7 => array ('name' => '??'),
-					8 => array ('name' => '1號門(左) 入'),
-					9 => array ('name' => '1號門(右) 入'),
-					10 => array ('name' => '1號門 入'),
-					11 => array ('name' => '5號門 入'),
-					12 => array ('name' => '5號門 出')
-				),
-			40702 => array
-				(
-					0 => array ('name' => '入0'),
-					1 => array ('name' => '入1'),
-					2 => array ('name' => '出2')
-				)
-		);
-	
-	// 車道進出名稱
-	function gen_io_name($rows)
-	{
-		if(!isset($this->lanes[$rows['station_no']]))
-			return empty($rows['out_time']) ? "入口 {$rows['in_lane']}" : "入口 {$rows['in_lane']} -> 出口 {$rows['out_lane']}";
-		
-		return empty($rows['out_time']) ? $this->lanes[$rows['station_no']][$rows['in_lane']]['name'] : $this->lanes[$rows['station_no']][$rows['in_lane']]['name'] . " -> " . $this->lanes[$rows['station_no']][$rows['out_lane']]['name'];
-	}
-	
 	function __construct()
 	{
-		parent::__construct(); 
-		$this->load->database(); 
-    }   
+		parent::__construct();
+    }
      
 	public function init($vars)
 	{
@@ -174,9 +137,6 @@ class Carpark_model extends CI_Model
             //$lane_no = $rows['in_out'] == 'CI' ? "入{$rows['in_lane']}" : "入{$rows['in_lane']} -> 出{$rows['out_lane']}";
 			//$lane_no = empty($rows['out_time']) ? "入{$rows['in_lane']}" : "入{$rows['in_lane']} -> 出{$rows['out_lane']}"; // 2016/08/22 有離場時間就顯示
             
-	        $pic_name = str_replace('.jpg', '', empty($rows['out_pic_name']) ? $rows['in_pic_name'] : $rows['out_pic_name']);
-            $arr = explode('-', $pic_name);
-			$pic_path = isset($arr[7]) ? APP_URL.'pics/'.substr($arr[7], 0, 8).'/'.$pic_name : '';
               
             $data[$idx] = array
             (
@@ -188,8 +148,8 @@ class Carpark_model extends CI_Model
               	// 'etag' => $rows['etag'],
               	'etag' => $rows['etag'],
               	'owner' => $rows['owner'],
-              	'io_time' => empty($rows['out_time']) ? $rows['in_time'] : "{$rows['in_time']}(入)<br>{$rows['out_time']}(出)<br>{$rows['minutes']}分(停留時間)",
-              	'pic_name' => $pic_path
+              	'io_time' => $this->gen_io_time($rows),
+              	'pic_name' => $this->gen_io_image_path($rows)
             );            
             ++$idx;
         }
@@ -277,11 +237,11 @@ class Carpark_model extends CI_Model
         	//++$rows['out_lane'];    
             
 			//$lane_no = empty($rows['out_time']) ? "入{$rows['in_lane']}" : "入{$rows['in_lane']} -> 出{$rows['out_lane']}"; 
-            $io_time = empty($rows['out_time']) ? $rows['in_time'] : "{$rows['in_time']}(入)<br>{$rows['out_time']}(出)<br>{$rows['minutes']}分(停留時間)";
+            //$io_time = empty($rows['out_time']) ? $rows['in_time'] : "{$rows['in_time']}(入)<br>{$rows['out_time']}(出)<br>{$rows['minutes']}分(停留時間)";
 			
-	        $pic_name = str_replace('.jpg', '', empty($rows['out_pic_name']) ? $rows['in_pic_name'] : $rows['out_pic_name']);
-            $arr = explode('-', $pic_name);
-            $pic_path = APP_URL.'pics/'.substr($arr[7], 0, 8).'/'.$pic_name;
+	        //$pic_name = str_replace('.jpg', '', empty($rows['out_pic_name']) ? $rows['in_pic_name'] : $rows['out_pic_name']);
+            //$arr = explode('-', $pic_name);
+            //$pic_path = APP_URL.'pics/'.substr($arr[7], 0, 8).'/'.$pic_name;
             
             $data[$idx++] = array
             (
@@ -289,8 +249,8 @@ class Carpark_model extends CI_Model
               	'lpr' => $rows['lpr'],
               	'etag' => $rows['etag'],
               	'owner' => empty($rows['owner']) ? '' : $rows['owner'],
-              	'io_time' => $io_time,
-              	'pic_name' => $pic_path
+              	'io_time' => $this->gen_io_time($rows),
+              	'pic_name' => $this->gen_io_image_path($rows)
             );            
         }  
         
@@ -324,11 +284,11 @@ class Carpark_model extends CI_Model
         	//++$rows['out_lane'];    
             
 			//$lane_no = empty($rows['out_time']) ? "入{$rows['in_lane']}" : "入{$rows['in_lane']} -> 出{$rows['out_lane']}"; 
-            $io_time = empty($rows['out_time']) ? $rows['in_time'] : "{$rows['in_time']}(入)<br>{$rows['out_time']}(出)<br>{$rows['minutes']}分(停留時間)";                    
+            //$io_time = empty($rows['out_time']) ? $rows['in_time'] : "{$rows['in_time']}(入)<br>{$rows['out_time']}(出)<br>{$rows['minutes']}分(停留時間)";                    
             
-	        $pic_name = str_replace('.jpg', '', empty($rows['out_pic_name']) ? $rows['in_pic_name'] : $rows['out_pic_name']);
-            $arr = explode('-', $pic_name);
-            $pic_path = APP_URL.'pics/'.substr($arr[7], 0, 8).'/'.$pic_name;
+	        //$pic_name = str_replace('.jpg', '', empty($rows['out_pic_name']) ? $rows['in_pic_name'] : $rows['out_pic_name']);
+            //$arr = explode('-', $pic_name);
+            //$pic_path = APP_URL.'pics/'.substr($arr[7], 0, 8).'/'.$pic_name;
             
             $data[$idx++] = array
             (
@@ -336,8 +296,8 @@ class Carpark_model extends CI_Model
               	'lpr' => $rows['lpr'],
               	'etag' => $rows['etag'],
               	'owner' => empty($rows['owner']) ? '' : $rows['owner'],
-              	'io_time' => $io_time,
-              	'pic_name' => $pic_path
+              	'io_time' => $this->gen_io_time($rows),
+              	'pic_name' => $this->gen_io_image_path($rows)
             );            
         }
             
@@ -374,11 +334,11 @@ class Carpark_model extends CI_Model
         	//++$rows['out_lane'];    
             
 			//$lane_no = empty($rows['out_time']) ? "入{$rows['in_lane']}" : "入{$rows['in_lane']} -> 出{$rows['out_lane']}"; 
-            $io_time = empty($rows['out_time']) ? $rows['in_time'] : "{$rows['in_time']}(入)<br>{$rows['out_time']}(出)<br>{$rows['minutes']}分(停留時間)";                      
+            //$io_time = empty($rows['out_time']) ? $rows['in_time'] : "{$rows['in_time']}(入)<br>{$rows['out_time']}(出)<br>{$rows['minutes']}分(停留時間)";                      
             
-	        $pic_name = str_replace('.jpg', '', empty($rows['out_pic_name']) ? $rows['in_pic_name'] : $rows['out_pic_name']);
-            $arr = explode('-', $pic_name);
-            $pic_path = APP_URL.'pics/'.substr($arr[7], 0, 8).'/'.$pic_name;
+	        //$pic_name = str_replace('.jpg', '', empty($rows['out_pic_name']) ? $rows['in_pic_name'] : $rows['out_pic_name']);
+            //$arr = explode('-', $pic_name);
+            //$pic_path = APP_URL.'pics/'.substr($arr[7], 0, 8).'/'.$pic_name;
             
             $data[$idx++] = array
             (
@@ -387,8 +347,8 @@ class Carpark_model extends CI_Model
               	'lpr' => $rows['lpr'],
               	'etag' => $rows['etag'],
               	'owner' => '',
-              	'io_time' => $io_time,
-              	'pic_name' => $pic_path
+              	'io_time' => $this->gen_io_time($rows),
+              	'pic_name' => $this->gen_io_image_path($rows)
             );            
 			
 			//trigger_error(__FUNCTION__ . '..' .print_r($rows, true));
