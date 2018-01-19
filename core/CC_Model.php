@@ -31,6 +31,18 @@ class CC_Model extends CI_Model
 					2 => array ('name' => '出2',	'p_ip' => '')	// 無
 				)
 		);
+		
+	// 車道 IP
+	public function get_p_ip($station_no, $ivsno)
+	{
+		if(!isset($this->lanes[$station_no]))
+			return false;
+		
+		if(!isset($this->lanes[$station_no][$ivsno]))
+			return false;
+		
+		return $this->lanes[$station_no][$ivsno]['p_ip'];
+	}
 	
 	// 車道進出名稱
 	public function gen_io_name($rows)

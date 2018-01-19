@@ -6,52 +6,16 @@ require_once(ALTOB_SYNC_FILE) ;
 
 define('CARS_TMP_LOG', 'cars_tmp_log');	// 暫存進出車號
 
-class Cars_model extends CI_Model
+class Cars_model extends CC_Model
 {
     var $vars = array();
 
     var $now_str;
-	
-	// 車道
-	var $lanes = array
-		(
-			40701 => array
-				(
-					0 => array ('name' => '4號門(中) 出',	'p_ip' => '192.168.2.85'),	// 4號門 出, 中間	（傳送離場給博辰）
-					1 => array ('name' => '4號門(左) 出',	'p_ip' => '192.168.2.84'),	// 4號門 出, 左		（傳送離場給博辰）
-					2 => array ('name' => '4號門(右) 入',	'p_ip' => ''),				// 4號門 入, 右
-					3 => array ('name' => '4號門(左) 入',	'p_ip' => ''),				// 4號門 入, 左
-					4 => array ('name' => '4號門(右) 出',	'p_ip' => '192.168.2.86'),	// 4號門 出, 右		（傳送離場給博辰）
-					5 => array ('name' => '3號門A 出',		'p_ip' => '192.168.2.81'),	// 3號門 出, 單		（傳送離場給博辰）
-					6 => array ('name' => '3號門B 出',		'p_ip' => '192.168.2.82'),	// 3號門 出, 單		（傳送離場給博辰）
-					7 => array ('name' => '??',				'p_ip' => ''),				// ??
-					8 => array ('name' => '1號門(左) 入',	'p_ip' => ''),				// 1號門 入, 左
-					9 => array ('name' => '1號門(右) 入',	'p_ip' => ''),				// 1號門 入, 右
-					10 => array ('name' => '1號門 入',		'p_ip' => ''),				// 1號門 入, 單
-					11 => array ('name' => '5號門 入',		'p_ip' => ''),				// 5號門 入
-					12 => array ('name' => '5號門 出',		'p_ip' => '')				// 5號門 出			（傳送離場給博辰）
-				),
-			40702 => array
-				(
-					0 => array ('name' => '入0',	'p_ip' => ''),	// 無
-					1 => array ('name' => '入1',	'p_ip' => ''),	// 無
-					2 => array ('name' => '出2',	'p_ip' => '')	// 無
-				)
-		);
-
-	// 車道進出名稱
-	function gen_io_name($rows)
-	{
-		if(!isset($this->lanes[$rows['station_no']]))
-			return empty($rows['out_time']) ? "入口 {$rows['in_lane']}" : "入口 {$rows['in_lane']} -> 出口 {$rows['out_lane']}";
-		
-		return empty($rows['out_time']) ? $this->lanes[$rows['station_no']][$rows['in_lane']]['name'] : $this->lanes[$rows['station_no']][$rows['in_lane']]['name'] . " -> " . $this->lanes[$rows['station_no']][$rows['out_lane']]['name'];
-	}
 		
 	function __construct()
 	{
 		parent::__construct();
-		$this->load->database();
+
         $this->now_str = date('Y-m-d H:i:s');
     }
 
@@ -1740,13 +1704,13 @@ class Cars_model extends CI_Model
 	// 傳送臨停資訊給博辰
     function cars2parktron($lpr, $in_time, $balance_time, $ivsno, $station_no)
     {
-		if(!isset($this->lanes[$station_no]) || empty($this->lanes[$station_no][$ivsno]['p_ip']))
+		if(empty($this->get_p_ip($station_no, $ivsno)))
 		{
 			trigger_error(__FUNCTION__ . "|$lpr, $in_time, $balance_time, $ivsno, $station_no|skip..");
 			return false;
 		}
 
-		$p_ip = $this->lanes[$station_no][$ivsno]['p_ip'];
+		$p_ip = $this->get_p_ip($station_no, $ivsno);
     	$param = array
 			(
     		'PlateNo' => $lpr,                    // 車牌號碼
