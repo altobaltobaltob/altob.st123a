@@ -808,8 +808,8 @@ class Cars_model extends CC_Model
 		// 中榮南區
 		if($parms['sno'] == 40701)
 		{
-			// 時段限制 (員工)
-			if(isset($rows['member_attr']) && in_array($rows['member_attr'], array(4)))
+			// 時段限制 (北區員工)
+			if(isset($rows['member_attr']) && in_array($rows['member_attr'], array(141)))
 			{
 				$park_time = 'S1809,HO';
 				$pt_arr = array(
@@ -850,12 +850,14 @@ class Cars_model extends CC_Model
 					$is_member_valid = false;		// 離場時間未達標
 				}
 			}
-			// 身份限制 (機車)
-			else if(isset($rows['member_attr']) && in_array($rows['member_attr'], array(203)))
+			// 身份限制 (一般機車, 身障機車)
+			else if(isset($rows['member_attr']) && in_array($rows['member_attr'], array(132, 203)))
 			{
 				trigger_error(__FUNCTION__ . "|{$parms['lpr']}|{$rows['member_attr']}|身份限制");
 				$is_member_valid = false;
 			}
+			
+			// 預設通行身份： 救護車(111), 南區員工(4), VIP(250)
 		}
 		
 		return $is_member_valid;
