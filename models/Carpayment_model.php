@@ -331,11 +331,14 @@ class Carpayment_model extends CI_Model
 				GROUP BY obj_id 
 				ORDER BY out_before_time DESC";
 		*/
+		
+		$limit_time = date('Y-m-d H:i:s', strtotime("-3 days"));
+		
 		// 2018/01/08 - 已繳過不能再繳
 		$sql = "SELECT obj_id as lpr, ticket_no
 				FROM cario
 				WHERE {$fuzzy_statement} AND finished = 0 AND err = 0 AND payed = 0 
-				AND out_before_time > DATE_SUB(CURRENT_TIMESTAMP, INTERVAL 3 DAY)
+				AND out_before_time > '$limit_time'
 				GROUP BY obj_id 
 				ORDER BY out_before_time DESC";
 		$retults = $this->db->query($sql)->result_array();
@@ -520,7 +523,7 @@ class Carpayment_model extends CI_Model
                 
         $result = $this->db->select("in_time, date_format(pay_time, '%Y/%m/%d %T') as pay_time, in_pic_name, member_no, in_lane, in_out, station_no")
         		->from('cario')	
-                ->where(array('obj_type' => 1, 'obj_id' => $lpr, 'finished' => 0, 'err' => 0))
+                ->where(array('obj_id' => $lpr, 'finished' => 0, 'err' => 0))
                 ->order_by('cario_no', 'desc') 
                 ->limit(1)
                 ->get()
