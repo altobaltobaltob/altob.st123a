@@ -133,6 +133,16 @@ class Parkingquery extends CI_Controller
         echo json_encode($data, JSON_UNESCAPED_UNICODE); 
     }    
 	
+	// 查詢各樓層剩餘車位 (type 10)
+	public function check_space_10()
+	{
+    	$seqno = $this->uri->segment(3);
+        $data = $this->parkingquery_model->check_space(0, 10);
+        $data['result']['num'] = $seqno; 
+        $data['result_code'] = 'OK'; 
+        echo json_encode($data, JSON_UNESCAPED_UNICODE); 
+	}
+	
 	// 查詢各樓層剩餘車位 (身障)
 	public function check_space2() 
 	{       
