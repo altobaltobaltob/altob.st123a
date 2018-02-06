@@ -227,7 +227,14 @@ class Cars_model extends CC_Model
 			
 				$this->mq_send(MQ_TOPIC_ALTOB, MQ_ALTOB_MSG.",{$msg_id},{$parms['ivsno']}".MQ_ALTOB_MSG_END_TAG);
 				
-				return $this->gen_return_msg($msg_id, true); // 2018/01/03 放人
+				if(substr($parms['io'], -strlen('I')) === 'I')
+				{
+					return $this->gen_return_msg($msg_id, true); 	// 2018/02/06 入場放人
+				}
+				else
+				{
+					return $this->gen_return_msg($msg_id); 			// 2018/02/06 離場不放
+				}
 			}
 			else
 			{
@@ -429,6 +436,7 @@ class Cars_model extends CC_Model
 					// 場站會員身份特例判斷
 					if(!$skip_check && !$this->check_member_valid($rows, $parms, $rows_cario))
 					{
+						/*
 						trigger_error(__FUNCTION__ . "|會員身份 CO.A.1 無效, 臨停車流程|".print_r($rows, true));
 						
 						// 準備臨停車設定
@@ -447,6 +455,44 @@ class Cars_model extends CC_Model
 						
 						// 離場流程
 						return $this->do_carout($rows, $parms, $rows_cario, $opendoor, true);
+						*/
+						
+						// 2018/02/06
+						trigger_error(__FUNCTION__ . "|會員身份 CO.A.1 無效, 改為時段錯誤流程|".print_r($rows, true));
+						if($opendoor)
+						{
+							// [msg] 16: 時段租超時字幕
+							$msg_id = 16;
+									
+							// 字幕
+							$this->mq_send(MQ_TOPIC_ALTOB, MQ_ALTOB_MSG.",{$msg_id},{$parms['ivsno']},{$parms['lpr']},{$rows_cario['in_time']}".MQ_ALTOB_MSG_END_TAG);
+									
+							// 產生回傳
+							return $this->gen_return_msg($msg_id);
+						}
+						else
+						{
+							$data = array
+							(
+								'out_time' => $this->now_str,
+								'out_lane' => $parms['ivsno'],
+								'minutes' => $co_time_minutes,
+								'out_pic_name' => $parms['pic_name']
+							);
+							$this->db->update('cario', $data, array('cario_no' => $rows_cario['cario_no']));	// 記錄出場
+							trigger_error("{$parms['lpr']}|時段租超時" . print_r($rows_cario, true));
+
+							// 傳送離場記錄	
+							$sync_agent = new AltobSyncAgent();
+							$sync_agent->init($parms['sno'], $this->now_str);
+							$sync_agent->cario_no = $rows_cario['cario_no'];		// 進出編號
+							$sync_agent->member_no = $rows['member_no'];			// 會員編號
+							$sync_agent->in_time = $rows_cario['in_time'];			// 入場時間
+							$sync_result = $sync_agent->sync_st_out($parms);
+							trigger_error( "..sync_st_out.." .  $sync_result);											
+						}
+								
+						return true;
 					}
 							
 					// 判斷時段租是否超時 (超過 12 小時)
