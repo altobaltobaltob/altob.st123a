@@ -688,22 +688,17 @@ class Cars_model extends CC_Model
 			{
 				trigger_error(__FUNCTION__ . "|會員身份 CO.Z.1 無效, 臨停車流程|".print_r($rows, true));
 				
-				// 準備臨停車設定
-				unset($parms['member_no']);
-						
-				$rows = array
-				(
-					'lpr_correct' => '',
-					'member_no' => 0,
-					'member_name' => '',
-					'member_type' => 9,
-					'etag' => '',
-					'start_time' => '',
-					'end_time' => '',
-				);
-						
-				// 離場流程
-				$this->do_carout($rows, $parms, $rows_cario, $opendoor, true);
+				// 時段租超時
+				if($opendoor)
+				{
+					return $this->case_msg_16_opendoor($rows_cario, $parms);
+				}
+				else
+				{
+					$this->case_none_member_data($parms);									
+				}
+				
+				return true;
 			}
 					
 			if($opendoor)
@@ -722,15 +717,7 @@ class Cars_model extends CC_Model
 			}
 			else
 			{
-				trigger_error('月租車無入場資料:' . print_r($rows, true));
-						
-				// 傳送離場記錄
-				$sync_agent = new AltobSyncAgent();
-				$sync_agent->init($parms['sno'], $this->now_str);
-				$sync_agent->member_no = $rows['member_no'];			// 會員編號
-				$sync_agent->finished = 1;								// 已離場
-				$sync_result = $sync_agent->sync_st_out($parms);
-				trigger_error( "..sync_st_out.." .  $sync_result);
+				$this->case_none_member_data($parms);	
 			}
 			
 			return true;
@@ -1393,7 +1380,14 @@ class Cars_model extends CC_Model
 		$msg_id = 16;
 										
 		// 字幕
-		$this->mq_send(MQ_TOPIC_ALTOB, MQ_ALTOB_MSG.",{$msg_id},{$parms['ivsno']},{$parms['lpr']},{$rows_cario['in_time']}".MQ_ALTOB_MSG_END_TAG);
+		if(isset($rows_cario['in_time']))
+		{
+			$this->mq_send(MQ_TOPIC_ALTOB, MQ_ALTOB_MSG.",{$msg_id},{$parms['ivsno']},{$parms['lpr']},{$rows_cario['in_time']}".MQ_ALTOB_MSG_END_TAG);	
+		}
+		else
+		{
+			$this->mq_send(MQ_TOPIC_ALTOB, MQ_ALTOB_MSG.",{$msg_id},{$parms['ivsno']},{$parms['lpr']},查無入場時間}".MQ_ALTOB_MSG_END_TAG);	
+		}
 										
 		// 產生回傳
 		return $this->gen_return_msg($msg_id);
@@ -1420,6 +1414,20 @@ class Cars_model extends CC_Model
 		$sync_agent->in_time = $rows_cario['in_time'];			// 入場時間
 		$sync_result = $sync_agent->sync_st_out($parms);
 		trigger_error( "..sync_st_out.." .  $sync_result);		
+	}
+	
+	// 月租車無入場資料 (data)
+	function case_none_member_data($parms)
+	{
+		trigger_error('月租車無入場資料:' . print_r($parms, true));
+							
+		// 傳送離場記錄
+		$sync_agent = new AltobSyncAgent();
+		$sync_agent->init($parms['sno'], $this->now_str);
+		$sync_agent->member_no = 0;			// 會員編號
+		$sync_agent->finished = 1;			// 已離場
+		$sync_result = $sync_agent->sync_st_out($parms);
+		trigger_error( "..sync_st_out.." .  $sync_result);	
 	}
 	
 	// ===============================================
