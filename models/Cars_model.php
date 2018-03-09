@@ -181,7 +181,7 @@ class Cars_model extends CC_Model
 		{
 			foreach($cars_tmp_log_arr as $tmp)
 			{
-				if(isset($tmp['timestamp']) && $tmp['timestamp'] > time() - 2) // 時限內才判斷 (2 sec)
+				if(isset($tmp['timestamp']) && $tmp['timestamp'] > time() - 3) // 時限內才判斷 (3 sec)
 				{
 					array_push($cars_tmp_arr, $tmp);
 				}

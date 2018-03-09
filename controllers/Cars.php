@@ -131,6 +131,26 @@ class Cars extends CC_Controller
     */
 	public function opendoor()
 	{
+		// ** copy from get_opendoor ** //
+		
+		// 初始 mqtt
+		$this->init_mqtt(true);
+		
+		// 執行
+		$parms = $this->uri->uri_to_assoc(3);
+		$parms['lpr'] = urldecode($parms['lpr']); // 中文車牌
+		
+		// 無 etag
+		if(empty($parms['etag']))
+			$parms['etag'] = 'NONE';
+		
+		$return_msg = $this->app_model()->opendoor_lprio($parms);
+		trigger_error(__FUNCTION__ . "|{$parms['sno']}|{$parms['ivsno']}|{$parms['io']}|{$parms['lpr']}|return_msg|" . $return_msg);
+		
+		echo $return_msg;
+		exit;
+		
+		/*
 		// 初始 mqtt
 		$this->init_mqtt();
 		
@@ -140,6 +160,7 @@ class Cars extends CC_Controller
 		
 		$return_msg = $this->app_model()->opendoor_lprio($parms);
 		trigger_error(__FUNCTION__ . "|{$parms['sno']}|{$parms['io']}|{$parms['lpr']}|return_msg|" . $return_msg);
+		*/
 	}
     
     // IVS -> 車號, 影像 
@@ -164,12 +185,63 @@ http://192.168.10.201/cars.html/ipcam/sno/12119/ivsno/0/io/O/type/C/lpr/4750YC/c
     */
     public function ipcam()
 	{          
+		// ** copy from post_ipcam ** //
+	
+		// 執行	
+    	$parms = $this->uri->uri_to_assoc(3);
+		$parms['lpr'] = urldecode($parms['lpr']); // 中文車牌
+		
+		// 無 etag
+		if(empty($parms['etag']))
+			$parms['etag'] = 'NONE';
+		
+		// 同步並送出一次出入口 888
+		//$this->data_model()->sync_888($parms);
+                                                                  
+        $pic_folder = CAR_PIC.$this->vars['date_num'].'/';		// 今日資料夾名(yyyymmdd)
+        if (!file_exists($pic_folder))	mkdir($pic_folder);		// 如果資料夾不存在, 建立日期資料夾
+        
+        $config['upload_path'] = $pic_folder;           
+        $config['allowed_types'] = 'jpg';                 
+        $config['file_name'] = "lpr-{$parms['lpr']}-{$parms['io']}-{$parms['ivsno']}-{$parms['sq']}-C-1-{$this->vars['time_num']}.jpg"; 
+		
+		trigger_error(__FUNCTION__ . '..' . print_r($_FILES, true));
+		
+		if (!isset($_FILES['cars'])) 
+		{
+			$status = 'error';		// 顯示上傳錯誤
+			trigger_error('[ERROR] cars not found: ' . print_r($_FILES, true));
+		}
+		else
+		{
+			$this->load->library('upload', $config);
+        
+			if(!$this->upload->do_upload('cars')){         
+				$status = 'error';		// 顯示上傳錯誤
+				trigger_error($this->upload->display_errors());
+			} 
+			else
+			{
+				// 若無錯誤，則上傳檔案
+				$file = $this->upload->data('cars');
+				$status = 'ok';
+			}
+		}
+        
+        $parms['obj_type'] = 1;	// 車牌類  
+        $parms['curr_time_str'] = $this->vars['date_time'];	// 現在時間, 例2015-09-21 15:36:47  
+        $parms['pic_name'] = $config['file_name'];	// 圖片檔名 
+        
+        $return_msg = $this->app_model()->lprio($parms);
+		trigger_error(__FUNCTION__ . "|{$parms['sno']}|{$parms['ivsno']}|{$parms['io']}|{$parms['lpr']}|return_msg|" . $return_msg);
+	
+		/*
 		// 執行	
     	$parms = $this->uri->uri_to_assoc(3);
 		$parms['lpr'] = urldecode($parms['lpr']); // 中文車牌
 		
 		// 同步並送出一次出入口 888
-		$this->data_model()->sync_888($parms);
+		//$this->data_model()->sync_888($parms);
                                                                   
         $pic_folder = CAR_PIC.$this->vars['date_num'].'/';		// 今日資料夾名(yyyymmdd)
         if (!file_exists($pic_folder))	mkdir($pic_folder);		// 如果資料夾不存在, 建立日期資料夾
@@ -207,6 +279,7 @@ http://192.168.10.201/cars.html/ipcam/sno/12119/ivsno/0/io/O/type/C/lpr/4750YC/c
         
         $return_msg = $this->app_model()->lprio($parms);	// 測試eTag
 		trigger_error(__FUNCTION__ . "|{$parms['sno']}|{$parms['io']}|{$parms['lpr']}|return_msg|" . $return_msg);
+		*/
 	}  
 
 	/*
