@@ -733,7 +733,7 @@ class Cars_model extends CC_Model
 				$this->mq_send(MQ_TOPIC_ALTOB, MQ_ALTOB_MSG.",{$msg_id},{$parms['ivsno']},{$parms['lpr']}".MQ_ALTOB_MSG_END_TAG);
 				
 				// 產生回傳
-				return $this->gen_return_msg($msg_id, true); // 2018/01/03 放人
+				return $this->gen_return_msg($msg_id);
 			}
 			else
 			{
